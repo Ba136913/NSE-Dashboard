@@ -25,10 +25,9 @@
         .green-text { color: #10b981; font-weight: bold; }
         .red-text { color: #ef4444; font-weight: bold; }
         
-        /* Clickable TradingView Links CSS */
         .tv-link { 
             font-weight: bold; 
-            color: #2563eb; /* TradingView jaisa blue color */
+            color: #2563eb; 
             text-decoration: none; 
             cursor: pointer;
             padding: 2px 5px;
@@ -108,12 +107,12 @@
         // Tumhara Live Render API
         const API_BASE_URL = "https://nse-top-gainer-and-loser.onrender.com"; 
 
-        // TradingView Link Banane Wala Function
+        // SMART TRADINGVIEW LINK GENERATOR
         function getTradingViewUrl(symbol, isIndex = false) {
             let tvSymbol = symbol;
             
-            // TradingView Sectoral Indices ke naam thode alag use karta hai, uski setting:
             if (isIndex) {
+                // TV ke exact index symbols ka bada map
                 const indexMap = {
                     "NIFTY BANK": "BANKNIFTY",
                     "NIFTY IT": "CNXIT",
@@ -125,13 +124,26 @@
                     "NIFTY MEDIA": "CNXMEDIA",
                     "NIFTY ENERGY": "CNXENERGY",
                     "NIFTY PSU BANK": "CNXPSUBANK",
-                    "NIFTY FIN SERVICE": "CNXFIN"
+                    "NIFTY FINANCIAL SERVICES": "FINNIFTY",
+                    "NIFTY PRIVATE BANK": "NIFTYPVTBANK",
+                    "NIFTY HEALTHCARE INDEX": "NIFTY_HEALTHCARE"
                 };
-                // Agar map me hai toh wo naam lo, warna space hata kar symbol bana do
-                tvSymbol = indexMap[symbol] || symbol.replace(/\s+/g, '');
+                
+                if (indexMap[symbol]) {
+                    tvSymbol = indexMap[symbol];
+                } else {
+                    // Agar koi naya index aaye (jaise IT & TELECOM), toh space aur & hata ke safe banaye
+                    tvSymbol = symbol.replace(/ & /g, '_').replace(/ /g, '_');
+                }
+            } else {
+                // Stocks me agar "M&M" ya "L&TFH" aaye toh TV usko "M_M" samajhta hai
+                if (tvSymbol.includes('&')) {
+                    tvSymbol = tvSymbol.replace(/&/g, '_');
+                }
             }
-            // TradingView ka direct chart link
-            return `https://in.tradingview.com/chart/?symbol=NSE:${tvSymbol}`;
+            
+            // encodeURIComponent se URL break nahi hoga kisi special character se
+            return `https://in.tradingview.com/chart/?symbol=NSE:${encodeURIComponent(tvSymbol)}`;
         }
 
         async function updateDashboard() {
@@ -149,12 +161,11 @@
                     document.getElementById('main-content').style.display = "block";
                     document.getElementById('timestamp').innerText = "✅ Last Updated: " + marketData.timestamp + " | Auto-Refreshes every 2 mins";
 
-                    // 1. Sectoral Data Render
                     let secHTML = "";
                     sectoralData.data.forEach(sec => {
                         let colorClass = sec.Percent_Change > 0 ? "green-text" : "red-text";
                         let sign = sec.Percent_Change > 0 ? "+" : "";
-                        let tvUrl = getTradingViewUrl(sec.Index_Name, true); // True means it's an index
+                        let tvUrl = getTradingViewUrl(sec.Index_Name, true);
 
                         secHTML += `<tr>
                             <td><a href="${tvUrl}" target="_blank" class="tv-link">${sec.Index_Name} 📈</a></td>
@@ -165,7 +176,6 @@
                     });
                     document.getElementById('sectors-body').innerHTML = secHTML;
 
-                    // 2. Gainers Render
                     let gainersHTML = "";
                     marketData.data.top_gainers.forEach(stock => {
                         let tvUrl = getTradingViewUrl(stock.Symbol, false);
@@ -179,7 +189,6 @@
                     });
                     document.getElementById('gainers-body').innerHTML = gainersHTML;
 
-                    // 3. Losers Render
                     let losersHTML = "";
                     marketData.data.top_losers.forEach(stock => {
                         let tvUrl = getTradingViewUrl(stock.Symbol, false);
