@@ -24,7 +24,23 @@
         
         .green-text { color: #10b981; font-weight: bold; }
         .red-text { color: #ef4444; font-weight: bold; }
-        .bold-text { font-weight: bold; color: #334155; }
+        
+        /* Clickable TradingView Links CSS */
+        .tv-link { 
+            font-weight: bold; 
+            color: #2563eb; /* TradingView jaisa blue color */
+            text-decoration: none; 
+            cursor: pointer;
+            padding: 2px 5px;
+            border-radius: 4px;
+            transition: all 0.2s ease;
+        }
+        .tv-link:hover { 
+            background-color: #e2e8f0; 
+            text-decoration: underline; 
+            color: #1e3a8a;
+        }
+
         .loading { text-align: center; font-size: 18px; font-weight: bold; color: #f59e0b; padding: 20px; }
     </style>
 </head>
@@ -33,14 +49,14 @@
     <div class="dashboard-container">
         <div class="header">
             <h1>🚀 NSE MASTER DASHBOARD</h1>
-            <div class="time-box" id="timestamp">⏳ Server se data fetch ho raha hai... (Pehli baar 30-40 sec lag sakte hain)</div>
+            <div class="time-box" id="timestamp">⏳ Server se data fetch ho raha hai...</div>
         </div>
 
         <div id="loading-msg" class="loading">Data Load Ho Raha Hai... Kripya Wait Karein...</div>
 
         <div id="main-content" style="display: none;">
             <div class="card" style="margin-bottom: 20px;">
-                <h2 class="sector-title">📊 LIVE SECTORAL INDICES</h2>
+                <h2 class="sector-title">📊 LIVE SECTORAL INDICES (Click name for Chart)</h2>
                 <table>
                     <thead>
                         <tr>
@@ -56,7 +72,7 @@
 
             <div class="row">
                 <div class="card">
-                    <h2 class="gainers-title">🟢 TOP 20 GAINERS (F&O)</h2>
+                    <h2 class="gainers-title">🟢 TOP 20 GAINERS (Click for Chart)</h2>
                     <table>
                         <thead>
                             <tr>
@@ -71,7 +87,7 @@
                 </div>
 
                 <div class="card">
-                    <h2 class="losers-title">🔴 TOP 20 LOSERS (F&O)</h2>
+                    <h2 class="losers-title">🔴 TOP 20 LOSERS (Click for Chart)</h2>
                     <table>
                         <thead>
                             <tr>
@@ -89,8 +105,34 @@
     </div>
 
     <script>
-        // Tumhara Live Render Server Link (Ab PC on rakhne ki zaroorat nahi)
+        // Tumhara Live Render API
         const API_BASE_URL = "https://nse-top-gainer-and-loser.onrender.com"; 
+
+        // TradingView Link Banane Wala Function
+        function getTradingViewUrl(symbol, isIndex = false) {
+            let tvSymbol = symbol;
+            
+            // TradingView Sectoral Indices ke naam thode alag use karta hai, uski setting:
+            if (isIndex) {
+                const indexMap = {
+                    "NIFTY BANK": "BANKNIFTY",
+                    "NIFTY IT": "CNXIT",
+                    "NIFTY AUTO": "CNXAUTO",
+                    "NIFTY PHARMA": "CNXPHARMA",
+                    "NIFTY FMCG": "CNXFMCG",
+                    "NIFTY METAL": "CNXMETAL",
+                    "NIFTY REALTY": "CNXREALTY",
+                    "NIFTY MEDIA": "CNXMEDIA",
+                    "NIFTY ENERGY": "CNXENERGY",
+                    "NIFTY PSU BANK": "CNXPSUBANK",
+                    "NIFTY FIN SERVICE": "CNXFIN"
+                };
+                // Agar map me hai toh wo naam lo, warna space hata kar symbol bana do
+                tvSymbol = indexMap[symbol] || symbol.replace(/\s+/g, '');
+            }
+            // TradingView ka direct chart link
+            return `https://in.tradingview.com/chart/?symbol=NSE:${tvSymbol}`;
+        }
 
         async function updateDashboard() {
             try {
@@ -107,12 +149,15 @@
                     document.getElementById('main-content').style.display = "block";
                     document.getElementById('timestamp').innerText = "✅ Last Updated: " + marketData.timestamp + " | Auto-Refreshes every 2 mins";
 
+                    // 1. Sectoral Data Render
                     let secHTML = "";
                     sectoralData.data.forEach(sec => {
                         let colorClass = sec.Percent_Change > 0 ? "green-text" : "red-text";
                         let sign = sec.Percent_Change > 0 ? "+" : "";
+                        let tvUrl = getTradingViewUrl(sec.Index_Name, true); // True means it's an index
+
                         secHTML += `<tr>
-                            <td class="bold-text">${sec.Index_Name}</td>
+                            <td><a href="${tvUrl}" target="_blank" class="tv-link">${sec.Index_Name} 📈</a></td>
                             <td>${sec.Current_LTP}</td>
                             <td class="${colorClass}">${sign}${sec.Percent_Change}%</td>
                             <td>${sec.Open_Price}</td>
@@ -120,10 +165,13 @@
                     });
                     document.getElementById('sectors-body').innerHTML = secHTML;
 
+                    // 2. Gainers Render
                     let gainersHTML = "";
                     marketData.data.top_gainers.forEach(stock => {
+                        let tvUrl = getTradingViewUrl(stock.Symbol, false);
+
                         gainersHTML += `<tr>
-                            <td class="bold-text">${stock.Symbol}</td>
+                            <td><a href="${tvUrl}" target="_blank" class="tv-link">${stock.Symbol} 📈</a></td>
                             <td>${stock.LTP}</td>
                             <td class="green-text">+${stock.Change_Percent}%</td>
                             <td>${stock.Volume}</td>
@@ -131,10 +179,13 @@
                     });
                     document.getElementById('gainers-body').innerHTML = gainersHTML;
 
+                    // 3. Losers Render
                     let losersHTML = "";
                     marketData.data.top_losers.forEach(stock => {
+                        let tvUrl = getTradingViewUrl(stock.Symbol, false);
+
                         losersHTML += `<tr>
-                            <td class="bold-text">${stock.Symbol}</td>
+                            <td><a href="${tvUrl}" target="_blank" class="tv-link">${stock.Symbol} 📉</a></td>
                             <td>${stock.LTP}</td>
                             <td class="red-text">${stock.Change_Percent}%</td>
                             <td>${stock.Volume}</td>
@@ -149,7 +200,7 @@
         }
 
         updateDashboard();
-        setInterval(updateDashboard, 120000); // 2 mins auto-refresh
+        setInterval(updateDashboard, 120000); 
     </script>
 </body>
 </html>
