@@ -3,133 +3,140 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>NSE Pro Dashboard + AI</title>
+    <title>NSE Pro Dashboard + Gemini AI</title>
     <style>
-        body { font-family: 'Segoe UI', sans-serif; background: #f0f2f5; margin: 0; padding: 20px; }
-        .header { background: #1e293b; color: white; text-align: center; padding: 20px; border-radius: 12px; margin-bottom: 20px; }
-        .sentiment-card { background: white; padding: 15px; border-radius: 12px; text-align: center; margin-bottom: 20px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
-        .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(350px, 1fr)); gap: 20px; }
-        .card { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.08); }
-        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
-        th, td { padding: 10px; text-align: left; border-bottom: 1px solid #eee; font-size: 14px; }
+        body { font-family: 'Segoe UI', Tahoma, sans-serif; background: #f4f7f9; margin: 0; padding: 20px; }
+        .header { background: #1e293b; color: white; text-align: center; padding: 25px; border-radius: 15px; margin-bottom: 25px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+        
+        .sentiment-container { background: white; padding: 20px; border-radius: 15px; text-align: center; margin-bottom: 25px; border-left: 10px solid #3b82f6; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
+        #sentiment-label { font-size: 28px; font-weight: 800; margin: 10px 0; }
+
+        .dashboard-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(350px, 1fr)); gap: 25px; }
+        .card { background: white; padding: 20px; border-radius: 15px; box-shadow: 0 5px 15px rgba(0,0,0,0.05); overflow-x: auto; }
+        
+        h3 { border-bottom: 2px solid #f1f5f9; padding-bottom: 10px; margin-top: 0; }
+        table { width: 100%; border-collapse: collapse; }
+        th, td { padding: 12px; text-align: left; border-bottom: 1px solid #f1f5f9; font-size: 14px; }
         .green { color: #10b981; font-weight: bold; }
         .red { color: #ef4444; font-weight: bold; }
-        
-        /* AI Chat Box Styles */
-        #chat-box { position: fixed; bottom: 20px; right: 20px; width: 320px; height: 400px; background: white; border-radius: 15px; box-shadow: 0 10px 30px rgba(0,0,0,0.2); display: flex; flex-direction: column; overflow: hidden; border: 1px solid #ddd; }
-        #chat-header { background: #3b82f6; color: white; padding: 12px; font-weight: bold; cursor: pointer; }
-        #chat-logs { flex: 1; padding: 10px; overflow-y: auto; background: #f9fafb; font-size: 13px; }
-        .msg { margin-bottom: 10px; padding: 8px 12px; border-radius: 10px; max-width: 80%; }
-        .user-msg { background: #3b82f6; color: white; align-self: flex-end; margin-left: auto; }
-        .ai-msg { background: #e5e7eb; color: #1f2937; }
-        #chat-input-area { display: flex; padding: 10px; border-top: 1px solid #eee; }
-        #chat-input { flex: 1; border: 1px solid #ddd; padding: 8px; border-radius: 5px; outline: none; }
+
+        /* AI Chatbot UI */
+        #chat-window { position: fixed; bottom: 20px; right: 20px; width: 340px; height: 450px; background: white; border-radius: 20px; box-shadow: 0 10px 40px rgba(0,0,0,0.2); display: flex; flex-direction: column; overflow: hidden; border: 1px solid #e2e8f0; z-index: 9999; }
+        #chat-header { background: #3b82f6; color: white; padding: 15px; font-weight: bold; display: flex; justify-content: space-between; align-items: center; }
+        #chat-logs { flex: 1; padding: 15px; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; background: #f8fafc; }
+        .msg { padding: 10px 14px; border-radius: 15px; max-width: 80%; font-size: 13.5px; line-height: 1.4; }
+        .user-msg { background: #3b82f6; color: white; align-self: flex-end; border-bottom-right-radius: 2px; }
+        .ai-msg { background: #e2e8f0; color: #1e293b; align-self: flex-start; border-bottom-left-radius: 2px; }
+        #chat-input-box { display: flex; padding: 15px; background: white; border-top: 1px solid #eee; }
+        #user-input { flex: 1; border: 1px solid #ddd; padding: 10px; border-radius: 8px; outline: none; }
     </style>
 </head>
 <body>
 
     <div class="header">
         <h1>🚀 NSE MASTER DASHBOARD</h1>
-        <div id="last-updated">⏳ Fetching live data...</div>
+        <div id="sync-time">⏳ Connecting to backend...</div>
     </div>
 
-    <div class="sentiment-card">
-        <h3>Current Market Mood</h3>
-        <div id="sentiment-label" style="font-size: 24px; font-weight: bold;">Loading...</div>
+    <div class="sentiment-container">
+        <div style="color: #64748b; font-weight: 600; text-transform: uppercase; font-size: 12px;">Overall Market Mood</div>
+        <div id="sentiment-label">LOADING...</div>
+        <div style="font-size: 13px; color: #94a3b8;">Based on F&O Advance-Decline Ratio</div>
     </div>
 
-    <div class="grid">
+    <div class="dashboard-grid">
         <div class="card">
-            <h3 style="color: #3b82f6;">📊 Sectoral Performance</h3>
-            <table id="sector-table"><tbody></tbody></table>
+            <h3 style="color: #3b82f6;">📊 Sectoral Indices</h3>
+            <table id="sector-table"><thead><tr><th>Index</th><th>Change</th></tr></thead><tbody></tbody></table>
         </div>
         <div class="card">
             <h3 style="color: #10b981;">🟢 Top Gainers</h3>
-            <table id="gainer-table"><tbody></tbody></table>
+            <table id="gainer-table"><thead><tr><th>Symbol</th><th>LTP</th><th>% Chg</th></tr></thead><tbody></tbody></table>
         </div>
         <div class="card">
             <h3 style="color: #ef4444;">🔴 Top Losers</h3>
-            <table id="loser-table"><tbody></tbody></table>
+            <table id="loser-table"><thead><tr><th>Symbol</th><th>LTP</th><th>% Chg</th></tr></thead><tbody></tbody></table>
         </div>
     </div>
 
-    <div id="chat-box">
-        <div id="chat-header">💬 Chat with Gemini Bhai</div>
-        <div id="chat-logs" style="display: flex; flex-direction: column;">
-            <div class="msg ai-msg">Bhai! Market ka data ready hai, kuch bhi puch lo. 🔥</div>
+    <div id="chat-window">
+        <div id="chat-header">
+            <span>💬 Gemini Bhai AI</span>
+            <small style="font-size: 10px; opacity: 0.8;">Online</small>
         </div>
-        <div id="chat-input-area">
-            <input type="text" id="chat-input" placeholder="Type message...">
-            <button onclick="sendToAI()" style="margin-left:5px; cursor:pointer;">Send</button>
+        <div id="chat-logs">
+            <div class="msg ai-msg">Bhai! Market ka saara data mere paas hai. Kya puchna chahte ho? 🚀</div>
+        </div>
+        <div id="chat-input-box">
+            <input type="text" id="user-input" placeholder="TCS buy karun kya?">
+            <button onclick="askBhai()" style="background: #3b82f6; color: white; border: none; padding: 0 15px; margin-left: 8px; border-radius: 8px; cursor: pointer; font-weight: bold;">Send</button>
         </div>
     </div>
 
     <script>
-        const API_BASE = "https://nse-top-gainer-and-loser.onrender.com";
+        const API_URL = "https://nse-top-gainer-and-loser.onrender.com"; // Tera Render URL
 
-        async function refreshData() {
+        async function updateData() {
             try {
-                const res = await fetch(`${API_BASE}/api/all-data`);
-                const d = await res.json();
+                const res = await fetch(`${API_URL}/api/all-data`);
+                const data = await res.json();
                 
-                if(d.last_updated !== "Wait...") {
-                    document.getElementById('last-updated').innerText = "✅ Updated: " + d.last_updated;
+                if(data.last_updated !== "Wait...") {
+                    document.getElementById('sync-time').innerText = "✅ Last Sync: " + data.last_updated;
                     
                     // Sentiment
-                    const s = document.getElementById('sentiment-label');
-                    s.innerText = d.sentiment.label;
-                    s.style.color = d.sentiment.color;
+                    const sent = document.getElementById('sentiment-label');
+                    sent.innerText = data.sentiment.label;
+                    sent.style.color = data.sentiment.color;
 
-                    // Sectors
-                    let sHtml = "";
-                    d.sectoral.data.forEach(idx => {
-                        sHtml += `<tr><td>${idx.name}</td><td class="${idx.chng > 0 ? 'green':'red'}">${idx.chng}%</td></tr>`;
-                    });
-                    document.getElementById('sector-table').innerHTML = sHtml;
-
-                    // Gainers
-                    let gHtml = "";
-                    d.live_data.top_gainers.forEach(stk => {
-                        gHtml += `<tr><td>${stk.Symbol}</td><td>${stk.LTP}</td><td class="green">+${stk.Change}%</td></tr>`;
-                    });
-                    document.getElementById('gainer-table').innerHTML = gHtml;
-
-                    // Losers
-                    let lHtml = "";
-                    d.live_data.top_losers.forEach(stk => {
-                        lHtml += `<tr><td>${stk.Symbol}</td><td>${stk.LTP}</td><td class="red">${stk.Change}%</td></tr>`;
-                    });
-                    document.getElementById('loser-table').innerHTML = lHtml;
+                    // Tables
+                    renderTable('sector-table', data.sectoral.data, 'name', 'chng');
+                    renderTable('gainer-table', data.live_data.top_gainers, 'Symbol', 'Change', true);
+                    renderTable('loser-table', data.live_data.top_losers, 'Symbol', 'Change');
                 }
-            } catch (e) { console.log("Fetch Error"); }
+            } catch (e) { console.error("Sync failed"); }
         }
 
-        async function sendToAI() {
-            const input = document.getElementById('chat-input');
-            const logs = document.getElementById('chat-logs');
-            if(!input.value) return;
+        function renderTable(id, list, key1, key2, isGainer=false) {
+            let html = "";
+            list.forEach(item => {
+                let val = item[key2];
+                let css = val > 0 ? "green" : "red";
+                html += `<tr>
+                    <td><b>${item[key1]}</b></td>
+                    ${item.LTP ? `<td>${item.LTP}</td>` : ''}
+                    <td class="${css}">${val > 0 ? '+':''}${val}%</td>
+                </tr>`;
+            });
+            document.getElementById(id).querySelector('tbody').innerHTML = html;
+        }
 
-            const userText = input.value;
-            logs.innerHTML += `<div class="msg user-msg">${userText}</div>`;
-            input.value = "";
+        async function askBhai() {
+            const box = document.getElementById('user-input');
+            const logs = document.getElementById('chat-logs');
+            const text = box.value;
+            if(!text) return;
+
+            // User UI
+            logs.innerHTML += `<div class="msg user-msg">${text}</div>`;
+            box.value = "";
             logs.scrollTop = logs.scrollHeight;
 
             try {
-                const res = await fetch(`${API_BASE}/api/chat`, {
+                const res = await fetch(`${API_URL}/api/chat`, {
                     method: 'POST',
                     headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({message: userText})
+                    body: JSON.stringify({message: text})
                 });
-                const data = await res.json();
-                logs.innerHTML += `<div class="msg ai-msg">${data.reply}</div>`;
+                const d = await res.json();
+                logs.innerHTML += `<div class="msg ai-msg">${d.reply}</div>`;
                 logs.scrollTop = logs.scrollHeight;
-            } catch(e) {
-                logs.innerHTML += `<div class="msg ai-msg">Error hai bhai!</div>`;
-            }
+            } catch(e) { logs.innerHTML += `<div class="msg ai-msg">Bhai connection break ho gaya!</div>`; }
         }
 
-        setInterval(refreshData, 30000);
-        refreshData();
+        // Auto Refresh
+        setInterval(updateData, 30000);
+        updateData();
     </script>
 </body>
 </html>
