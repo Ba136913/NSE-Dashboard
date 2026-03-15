@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>NSE Master Dashboard</title>
+    <title>NSE Master Dashboard | Pro Trader</title>
     <style>
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f4f6f9; margin: 0; padding: 20px; }
         .header { background-color: #1e293b; color: white; text-align: center; padding: 20px; border-radius: 10px; margin-bottom: 20px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
@@ -40,7 +40,7 @@
             color: #1e3a8a;
         }
 
-        .loading { text-align: center; font-size: 18px; font-weight: bold; color: #f59e0b; padding: 20px; }
+        .loading { text-align: center; font-size: 18px; font-weight: bold; color: #f59e0b; padding: 40px; }
     </style>
 </head>
 <body>
@@ -48,14 +48,17 @@
     <div class="dashboard-container">
         <div class="header">
             <h1>🚀 NSE MASTER DASHBOARD</h1>
-            <div class="time-box" id="timestamp">⏳ Server se data fetch ho raha hai...</div>
+            <div class="time-box" id="timestamp">⏳ Server se connect ho raha hai...</div>
         </div>
 
-        <div id="loading-msg" class="loading">Data Load Ho Raha Hai... Kripya Wait Karein...</div>
+        <div id="loading-msg" class="loading">
+            🚀 Data Load Ho Raha Hai... <br>
+            <small style="font-weight: normal; color: #64748b;">Pehli baar mein 10-15 seconds lag sakte hain (Render Sleep Mode)</small>
+        </div>
 
         <div id="main-content" style="display: none;">
             <div class="card" style="margin-bottom: 20px;">
-                <h2 class="sector-title">📊 LIVE SECTORAL INDICES (Click name for Chart)</h2>
+                <h2 class="sector-title">📊 LIVE SECTORAL INDICES</h2>
                 <table>
                     <thead>
                         <tr>
@@ -71,7 +74,7 @@
 
             <div class="row">
                 <div class="card">
-                    <h2 class="gainers-title">🟢 TOP 20 GAINERS (Click for Chart)</h2>
+                    <h2 class="gainers-title">🟢 TOP 20 GAINERS</h2>
                     <table>
                         <thead>
                             <tr>
@@ -86,7 +89,7 @@
                 </div>
 
                 <div class="card">
-                    <h2 class="losers-title">🔴 TOP 20 LOSERS (Click for Chart)</h2>
+                    <h2 class="losers-title">🔴 TOP 20 LOSERS</h2>
                     <table>
                         <thead>
                             <tr>
@@ -104,71 +107,48 @@
     </div>
 
     <script>
-        // Tumhara Live Render API
         const API_BASE_URL = "https://nse-top-gainer-and-loser.onrender.com"; 
 
-        // SMART TRADINGVIEW LINK GENERATOR
         function getTradingViewUrl(symbol, isIndex = false) {
             let tvSymbol = symbol;
-            
             if (isIndex) {
-                // TV ke exact index symbols ka bada map
                 const indexMap = {
-                    "NIFTY BANK": "BANKNIFTY",
-                    "NIFTY IT": "CNXIT",
-                    "NIFTY AUTO": "CNXAUTO",
-                    "NIFTY PHARMA": "CNXPHARMA",
-                    "NIFTY FMCG": "CNXFMCG",
-                    "NIFTY METAL": "CNXMETAL",
-                    "NIFTY REALTY": "CNXREALTY",
-                    "NIFTY MEDIA": "CNXMEDIA",
-                    "NIFTY ENERGY": "CNXENERGY",
-                    "NIFTY PSU BANK": "CNXPSUBANK",
-                    "NIFTY FINANCIAL SERVICES": "FINNIFTY",
-                    "NIFTY PRIVATE BANK": "NIFTYPVTBANK",
-                    "NIFTY HEALTHCARE INDEX": "NIFTY_HEALTHCARE"
+                    "NIFTY BANK": "BANKNIFTY", "NIFTY IT": "CNXIT", "NIFTY AUTO": "CNXAUTO",
+                    "NIFTY PHARMA": "CNXPHARMA", "NIFTY FMCG": "CNXFMCG", "NIFTY METAL": "CNXMETAL",
+                    "NIFTY REALTY": "CNXREALTY", "NIFTY MEDIA": "CNXMEDIA", "NIFTY ENERGY": "CNXENERGY",
+                    "NIFTY PSU BANK": "CNXPSUBANK", "NIFTY FINANCIAL SERVICES": "FINNIFTY",
+                    "NIFTY PRIVATE BANK": "NIFTYPVTBANK", "NIFTY HEALTHCARE INDEX": "NIFTY_HEALTHCARE"
                 };
-                
-                if (indexMap[symbol]) {
-                    tvSymbol = indexMap[symbol];
-                } else {
-                    // Agar koi naya index aaye (jaise IT & TELECOM), toh space aur & hata ke safe banaye
-                    tvSymbol = symbol.replace(/ & /g, '_').replace(/ /g, '_');
-                }
+                tvSymbol = indexMap[symbol] || symbol.replace(/ & /g, '_').replace(/ /g, '_');
             } else {
-                // Stocks me agar "M&M" ya "L&TFH" aaye toh TV usko "M_M" samajhta hai
-                if (tvSymbol.includes('&')) {
-                    tvSymbol = tvSymbol.replace(/&/g, '_');
-                }
+                tvSymbol = tvSymbol.replace(/&/g, '_');
             }
-            
-            // encodeURIComponent se URL break nahi hoga kisi special character se
             return `https://in.tradingview.com/chart/?symbol=NSE:${encodeURIComponent(tvSymbol)}`;
         }
 
         async function updateDashboard() {
             try {
                 const [sectoralRes, gainersLosersRes] = await Promise.all([
-                    fetch(API_BASE_URL + '/api/sectoral-indices'),
-                    fetch(API_BASE_URL + '/api/live-data')
+                    fetch(`${API_BASE_URL}/api/sectoral-indices`),
+                    fetch(`${API_BASE_URL}/api/live-data`)
                 ]);
 
                 const sectoralData = await sectoralRes.json();
                 const marketData = await gainersLosersRes.json();
 
+                // Check if data is actually ready on server
                 if (sectoralData.status === 'success' && marketData.status === 'success') {
                     document.getElementById('loading-msg').style.display = "none";
                     document.getElementById('main-content').style.display = "block";
-                    document.getElementById('timestamp').innerText = "✅ Last Updated: " + marketData.timestamp + " | Auto-Refreshes every 2 mins";
+                    document.getElementById('timestamp').innerText = "✅ Last Updated: " + (marketData.timestamp || "Just Now");
 
+                    // 1. Render Sectors
                     let secHTML = "";
                     sectoralData.data.forEach(sec => {
                         let colorClass = sec.Percent_Change > 0 ? "green-text" : "red-text";
                         let sign = sec.Percent_Change > 0 ? "+" : "";
-                        let tvUrl = getTradingViewUrl(sec.Index_Name, true);
-
                         secHTML += `<tr>
-                            <td><a href="${tvUrl}" target="_blank" class="tv-link">${sec.Index_Name} 📈</a></td>
+                            <td><a href="${getTradingViewUrl(sec.Index_Name, true)}" target="_blank" class="tv-link">${sec.Index_Name} 📈</a></td>
                             <td>${sec.Current_LTP}</td>
                             <td class="${colorClass}">${sign}${sec.Percent_Change}%</td>
                             <td>${sec.Open_Price}</td>
@@ -176,12 +156,11 @@
                     });
                     document.getElementById('sectors-body').innerHTML = secHTML;
 
+                    // 2. Render Gainers
                     let gainersHTML = "";
                     marketData.data.top_gainers.forEach(stock => {
-                        let tvUrl = getTradingViewUrl(stock.Symbol, false);
-
                         gainersHTML += `<tr>
-                            <td><a href="${tvUrl}" target="_blank" class="tv-link">${stock.Symbol} 📈</a></td>
+                            <td><a href="${getTradingViewUrl(stock.Symbol, false)}" target="_blank" class="tv-link">${stock.Symbol} 📈</a></td>
                             <td>${stock.LTP}</td>
                             <td class="green-text">+${stock.Change_Percent}%</td>
                             <td>${stock.Volume}</td>
@@ -189,26 +168,30 @@
                     });
                     document.getElementById('gainers-body').innerHTML = gainersHTML;
 
+                    // 3. Render Losers
                     let losersHTML = "";
                     marketData.data.top_losers.forEach(stock => {
-                        let tvUrl = getTradingViewUrl(stock.Symbol, false);
-
                         losersHTML += `<tr>
-                            <td><a href="${tvUrl}" target="_blank" class="tv-link">${stock.Symbol} 📉</a></td>
+                            <td><a href="${getTradingViewUrl(stock.Symbol, false)}" target="_blank" class="tv-link">${stock.Symbol} 📉</a></td>
                             <td>${stock.LTP}</td>
                             <td class="red-text">${stock.Change_Percent}%</td>
                             <td>${stock.Volume}</td>
                         </tr>`;
                     });
                     document.getElementById('losers-body').innerHTML = losersHTML;
+                } else {
+                    document.getElementById('timestamp').innerText = "⏳ Server is collecting data from NSE... Refreshing in 5s";
+                    setTimeout(updateDashboard, 5000); // Retry soon if loading
                 }
             } catch (error) {
-                console.error("Dashboard update error:", error);
-                document.getElementById('timestamp').innerText = "❌ Data fetch failed. Please check backend.";
+                console.error("Fetch Error:", error);
+                document.getElementById('timestamp').innerText = "❌ Connection Error. Backend might be sleeping.";
             }
         }
 
+        // Initial Call
         updateDashboard();
+        // Auto Update every 2 minutes
         setInterval(updateDashboard, 120000); 
     </script>
 </body>
