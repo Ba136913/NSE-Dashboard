@@ -3,301 +3,161 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Chads Pro Terminal</title>
-    <script src="https://unpkg.com/lightweight-charts@4.1.1/dist/lightweight-charts.standalone.production.js"></script>
+    <title>F&O Quant Dashboard + AI</title>
     <style>
-        :root { --bg-dark: #0f1115; --card-bg: #131722; --text-main: #d1d4dc; --text-muted: #787b86; --bull-green: #089981; --bear-red: #f23645; --border-color: #2b2b43; --accent-blue: #2962ff; }
-        body { font-family: 'Inter', system-ui, sans-serif; background-color: var(--bg-dark); color: var(--text-main); margin: 0; padding: 0;}
-        .navbar { display: flex; justify-content: space-between; align-items: center; padding: 15px 20px; background-color: var(--card-bg); border-bottom: 1px solid var(--border-color); flex-wrap: wrap; gap: 10px;}
-        .logo { font-size: 20px; font-weight: 900; cursor: pointer; color: white; letter-spacing: 1px;}
-        .search-box { display: flex; gap: 8px; width: 100%; max-width: 400px;}
-        .search-input { flex: 1; padding: 10px 12px; border-radius: 6px; border: 1px solid var(--border-color); background: var(--bg-dark); color: white; outline: none; text-transform: uppercase;}
-        .btn { background: var(--accent-blue); color: white; border: none; padding: 10px 15px; border-radius: 6px; cursor: pointer; font-weight: bold;}
-        .container { max-width: 1400px; margin: 0 auto; padding: 20px; }
-        #scanner-view { display: block; } #analyzer-view { display: none; }
-        .loading { text-align: center; padding: 80px 20px; font-size: 18px; color: var(--text-muted); display: none;}
-        .section-title { margin-top: 10px; margin-bottom: 20px; font-size: 22px; font-weight: 800; color: white; border-bottom: 2px solid var(--border-color); padding-bottom: 10px;}
+        body { font-family: 'Segoe UI', Tahoma, sans-serif; background: #f4f7f9; margin: 0; padding: 20px; }
         
-        /* 🔥 AI Box Fixed Formatting */
-        .ai-box { background: rgba(41, 98, 255, 0.05); border-left: 4px solid var(--accent-blue); padding: 15px; border-radius: 6px; margin-bottom: 25px; clear: both; box-sizing: border-box;}
-        .ai-title { color: white; font-weight: bold; margin-bottom: 10px; font-size: 15px; display: flex; align-items: center; justify-content: space-between;}
-        .chat-history { max-height: 250px; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; margin-bottom: 15px; padding-right: 5px;}
-        .chat-msg { padding: 10px 14px; border-radius: 8px; font-size: 14px; line-height: 1.6; max-width: 90%; white-space: pre-wrap;}
-        .chat-msg.ai { background: var(--card-bg); color: #d1d4dc; border: 1px solid var(--border-color); align-self: flex-start;}
-        .chat-msg.user { background: var(--accent-blue); color: white; align-self: flex-end;}
-        .chat-msg.alert { background: rgba(242, 54, 69, 0.1); border-left: 3px solid #f23645; color: white; align-self: flex-start; }
-        .chat-input-container { display: flex; gap: 8px; }
-        .chat-input { flex: 1; padding: 10px; border-radius: 6px; border: 1px solid var(--border-color); background: var(--bg-dark); color: white; outline: none; }
-        .chat-btn { background: white; color: black; border: none; padding: 10px 20px; border-radius: 6px; cursor: pointer; font-weight: bold; }
+        /* Header */
+        .header { background: #1e293b; color: white; text-align: center; padding: 25px; border-radius: 12px; margin-bottom: 20px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+        h1 { margin: 0; font-size: 26px; letter-spacing: 1px; }
+        #sync-time { font-size: 14px; color: #cbd5e1; margin-top: 8px; font-weight: bold; }
 
-        .stock-grid { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 10px;}
-        .stock-pill { background-color: var(--card-bg); border: 1px solid var(--border-color); padding: 12px 20px; border-radius: 8px; font-weight: bold; cursor: pointer; transition: 0.2s; color: white; user-select: none;}
-        .stock-pill:hover { border-color: var(--accent-blue); background-color: rgba(41, 98, 255, 0.1); transform: translateY(-2px);}
+        /* Top Section Grid (Mood + AI) */
+        .top-section { display: grid; grid-template-columns: 1fr 1.5fr; gap: 20px; margin-bottom: 20px; }
+        @media(max-width: 768px) { .top-section { grid-template-columns: 1fr; } }
         
-        .terminal-header { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 15px; flex-wrap: wrap; gap: 10px;}
-        .stock-title { font-size: 32px; font-weight: 900; margin: 0; color: white;} .stock-price { font-size: 26px; font-weight: bold; color: white; }
-        .chart-controls { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 15px; align-items: center;}
-        .timeframe-select { background: var(--bg-dark); color: white; border: 1px solid var(--border-color); padding: 8px 12px; border-radius: 6px; font-weight: bold; cursor: pointer; outline: none;}
-        .indicator-btn { background: var(--bg-dark); border: 1px solid var(--border-color); color: var(--text-muted); padding: 8px 12px; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 13px; transition: 0.2s;}
-        .indicator-btn.active { background: rgba(41, 98, 255, 0.2); color: var(--accent-blue); border-color: var(--accent-blue); }
-        #btnAutoAlert.active { background: rgba(242, 54, 69, 0.15); color: #f23645; border-color: #f23645; box-shadow: 0 0 10px rgba(242, 54, 69, 0.3); }
+        .card { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.05); }
+        
+        /* Sentiment Card */
+        .sentiment-card { display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; border-left: 8px solid #3b82f6; }
+        #sentiment-label { font-size: 32px; font-weight: 900; margin: 15px 0; }
 
-        #tv-chart { width: 100%; height: 500px; background-color: var(--card-bg); border-radius: 8px; border: 1px solid var(--border-color); }
-        
-        @media (max-width: 768px) { #tv-chart { height: 400px; } .terminal-header { flex-direction: column; align-items: flex-start; } }
+        /* Embedded AI Chatbox */
+        .chat-container { display: flex; flex-direction: column; height: 280px; padding: 0; overflow: hidden; border: 1px solid #e2e8f0; }
+        #chat-header { background: #3b82f6; color: white; padding: 12px 15px; font-weight: bold; font-size: 15px; }
+        #chat-logs { flex: 1; padding: 15px; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; background: #f8fafc; }
+        .msg { padding: 10px 14px; border-radius: 12px; max-width: 85%; font-size: 13.5px; line-height: 1.4; }
+        .user-msg { background: #3b82f6; color: white; align-self: flex-end; border-bottom-right-radius: 2px; }
+        .ai-msg { background: #e2e8f0; color: #1e293b; align-self: flex-start; border-bottom-left-radius: 2px; }
+        #chat-input-box { display: flex; padding: 12px; background: white; border-top: 1px solid #e2e8f0; }
+        #user-input { flex: 1; border: 1px solid #cbd5e1; padding: 10px; border-radius: 6px; outline: none; font-size: 14px; }
+        #user-input:focus { border-color: #3b82f6; }
+
+        /* Bottom Tables Grid */
+        .dashboard-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 20px; }
+        .table-card { overflow-x: auto; }
+        h3 { border-bottom: 2px solid #f1f5f9; padding-bottom: 10px; margin-top: 0; font-size: 17px; }
+        table { width: 100%; border-collapse: collapse; }
+        th, td { padding: 12px; text-align: left; border-bottom: 1px solid #f1f5f9; font-size: 14px; }
+        th { color: #64748b; font-weight: 600; }
+        .green { color: #10b981; font-weight: bold; }
+        .red { color: #ef4444; font-weight: bold; }
     </style>
 </head>
 <body>
-    <div class="navbar">
-        <div class="logo" onclick="goHome()">⚡ CHADS TERMINAL</div>
-        <div class="search-box">
-            <input type="text" id="searchInput" class="search-input" placeholder="Search F&O..." onkeypress="handleSearch(event)">
-            <button class="btn" onclick="triggerSearch()">Analyze</button>
+
+    <div class="header">
+        <h1>🚀 180+ F&O QUANT DASHBOARD</h1>
+        <div id="sync-time">⏳ Fetching Market Data...</div>
+    </div>
+
+    <div class="top-section">
+        <div class="card sentiment-card">
+            <div style="color: #64748b; font-weight: 600; text-transform: uppercase; font-size: 13px; letter-spacing: 1px;">Overall F&O Mood</div>
+            <div id="sentiment-label">LOADING...</div>
+            <div style="font-size: 13px; color: #94a3b8;">Scanning 180+ Derivatives</div>
+        </div>
+
+        <div class="card chat-container">
+            <div id="chat-header">💬 Gemini Bhai - Quant Assistant</div>
+            <div id="chat-logs">
+                <div class="msg ai-msg">Bhai! Pura F&O market scan ho raha hai. Kya insight chahiye aaj? 📈</div>
+            </div>
+            <div id="chat-input-box">
+                <input type="text" id="user-input" placeholder="Aaj ka market trend kaisa hai?">
+                <button onclick="askBhai()" style="background: #3b82f6; color: white; border: none; padding: 0 18px; margin-left: 10px; border-radius: 6px; cursor: pointer; font-weight: bold;">Send</button>
+            </div>
         </div>
     </div>
 
-    <div class="container">
-        <div id="loading" class="loading"><h2 id="loading-title">🧠 Analyzing Markets...</h2><p id="loading-text">Loading chart and technicals.</p></div>
-
-        <div id="scanner-view">
-            <div class="ai-box">
-                <div class="ai-title">🤖 CHADS MARKET MENTOR</div>
-                <div class="chat-history" id="homeChatHistory">
-                    <div class="chat-msg ai">Bhai, main tera trading mentor hu. Strategies ya indicators ke baare me puchna hai toh bata!</div>
-                </div>
-                <div class="chat-input-container">
-                    <input type="text" id="homeChatInput" class="chat-input" placeholder="Ask general market questions..." onkeypress="handleHomeChat(event)">
-                    <button class="chat-btn" onclick="sendHomeChatMessage()">Send</button>
-                </div>
-            </div>
-
-            <h2 class="section-title">🔥 185+ F&O Stock Directory</h2>
-            <div id="stock-list" class="stock-grid">
-                <div style="color:var(--text-muted);">Loading F&O Stocks...</div>
-            </div>
+    <div class="dashboard-grid">
+        <div class="card table-card">
+            <h3 style="color: #3b82f6;">📊 Sectoral Indices</h3>
+            <table id="sector-table"><thead><tr><th>Index</th><th>LTP</th><th>% Chg</th></tr></thead><tbody></tbody></table>
         </div>
-
-        <div id="analyzer-view">
-            <button class="btn" style="background:var(--card-bg); border:1px solid var(--border-color); margin-bottom: 20px; color:white;" onclick="goHome()">← Back to Directory</button>
-            <div class="terminal-header"><div><h1 class="stock-title" id="stockName">--</h1></div><div class="stock-price" id="stockPrice">₹--</div></div>
-            
-            <div class="ai-box">
-                <div class="ai-title">🤖 CHADS AI ENGINE (Stock Analyzer)</div>
-                <div class="chat-history" id="chatHistory"></div>
-                <div class="chat-input-container">
-                    <input type="text" id="chatInput" class="chat-input" placeholder="Ask AI about this stock, strategy, or targets..." onkeypress="handleChat(event)">
-                    <button class="chat-btn" onclick="sendChatMessage()">Send</button>
-                </div>
-            </div>
-            
-            <div class="chart-controls">
-                <select id="timeframeSelector" class="timeframe-select" onchange="changeTimeframe()">
-                    <option value="5m" selected>5 Minutes</option><option value="15m">15 Minutes</option><option value="60m">1 Hour</option><option value="1d">1 Day</option>
-                </select>
-                <button class="indicator-btn active" id="btnIchimoku" onclick="toggleIchimoku()">Ichimoku Cloud</button>
-                <button class="indicator-btn active" id="btnPivots" onclick="togglePivots()">Pivots (Traditional 15)</button>
-                <button class="indicator-btn" id="btnAutoAlert" onclick="toggleAutoAlert()" style="margin-left: auto;">🚨 Auto AI Alerts: OFF</button>
-            </div>
-            <div id="tv-chart"></div>
+        <div class="card table-card">
+            <h3 style="color: #10b981;">🟢 Top 20 Gainers</h3>
+            <table id="gainer-table"><thead><tr><th>Symbol</th><th>LTP</th><th>% Chg</th></tr></thead><tbody></tbody></table>
+        </div>
+        <div class="card table-card">
+            <h3 style="color: #ef4444;">🔴 Top 20 Losers</h3>
+            <table id="loser-table"><thead><tr><th>Symbol</th><th>LTP</th><th>% Chg</th></tr></thead><tbody></tbody></table>
         </div>
     </div>
 
     <script>
-        const API_BASE_URL = "https://trading-view-lite-engine.onrender.com/api"; 
-        let chart=null, candleSeries=null, currentSymbol="";
-        let tenkanSeries=null, kijunSeries=null, spanASeries=null, spanBSeries=null, chikouSeries=null, pivotLines = [];
-        let ichiVisible = true, pivotsVisible = true;
-        let currentPrice = 0, currentRsi = 0;
-        let autoAlertInterval = null, isAutoAlertOn = false;
+        // Yahan apna Render ka link check kar lena bhai
+        const API_URL = "https://nse-top-gainer-and-loser.onrender.com";
 
-        function goHome() { 
-            if(isAutoAlertOn) toggleAutoAlert(); 
-            document.getElementById('scanner-view').style.display='block'; document.getElementById('analyzer-view').style.display='none'; document.getElementById('loading').style.display='none'; 
-        }
-        function handleSearch(e) { if(e.key === 'Enter') triggerSearch(); }
-        function triggerSearch() { let val = document.getElementById('searchInput').value.trim().toUpperCase().replace(/\s/g, ''); if(val) openAnalyzer(val); }
-        function changeTimeframe() { if(isAutoAlertOn) toggleAutoAlert(); if(currentSymbol) openAnalyzer(currentSymbol); }
-
-        async function fetchStocks() {
-            try {
-                const res = await fetch(`${API_BASE_URL}/swing-scanner`);
-                const json = await res.json();
-                if(json.status === 'success') {
-                    let html = "";
-                    json.data.fno_stocks.forEach(stock => { html += `<div class="stock-pill" onclick="openAnalyzer('${stock}')">${stock}</div>`; });
-                    document.getElementById('stock-list').innerHTML = html;
-                }
-            } catch (err) { document.getElementById('stock-list').innerHTML = `<div style="color:var(--bear-red);">Server waking up. Please refresh the page.</div>`; }
+        // TradingView Links Add Karne Ka Ninja Technique
+        function getTVLink(symbol) {
+            let cleanSym = symbol.replace(/&/g, '_');
+            return `<a href="https://in.tradingview.com/chart/?symbol=NSE:${cleanSym}" target="_blank" style="color:#2563eb; text-decoration:none; font-weight:bold;">${symbol} ↗</a>`;
         }
 
-        function handleHomeChat(e) { if(e.key === 'Enter') sendHomeChatMessage(); }
-        async function sendHomeChatMessage() {
-            const input = document.getElementById('homeChatInput');
-            const message = input.value.trim();
-            if(!message) return;
-            
-            input.value = '';
-            
-            const history = document.getElementById('homeChatHistory');
-            const userDiv = document.createElement('div');
-            userDiv.className = 'chat-msg user'; userDiv.innerText = message;
-            history.appendChild(userDiv); history.scrollTop = history.scrollHeight;
-
-            const loadingId = 'loading-home-' + Date.now();
-            const loadingDiv = document.createElement('div');
-            loadingDiv.className = 'chat-msg ai'; loadingDiv.id = loadingId; loadingDiv.innerText = "Processing...";
-            history.appendChild(loadingDiv); history.scrollTop = history.scrollHeight;
-
+        async function updateData() {
             try {
-                const res = await fetch(`${API_BASE_URL}/chat`, {
-                    method: 'POST', headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ is_home: true, message: message, symbol: "General", timeframe: "", price: 0, rsi: 0 })
-                });
-                const json = await res.json();
-                document.getElementById(loadingId).remove();
+                const res = await fetch(`${API_URL}/api/all-data`);
+                const data = await res.json();
                 
-                const aiDiv = document.createElement('div');
-                aiDiv.className = 'chat-msg ai';
-                aiDiv.innerText = json.status === 'success' ? json.reply : "⚠️ Error: " + json.message;
-                history.appendChild(aiDiv); history.scrollTop = history.scrollHeight;
-            } catch (e) { document.getElementById(loadingId).remove(); const errDiv = document.createElement('div'); errDiv.className = 'chat-msg ai'; errDiv.innerText = "⚠️ Network Error."; history.appendChild(errDiv); }
-        }
+                if(data.last_updated !== "Wait...") {
+                    document.getElementById('sync-time').innerText = "✅ Last Sync: " + data.last_updated + " | Auto-refreshing";
+                    
+                    const sent = document.getElementById('sentiment-label');
+                    sent.innerText = data.sentiment.label;
+                    sent.style.color = data.sentiment.color;
 
-        async function openAnalyzer(symbol) {
-            currentSymbol = symbol;
-            const tf = document.getElementById('timeframeSelector').value;
-            document.getElementById('scanner-view').style.display='none'; document.getElementById('analyzer-view').style.display='none'; document.getElementById('loading').style.display='block';
-            document.getElementById('chatHistory').innerHTML = '';
-            
-            try {
-                const res = await fetch(`${API_BASE_URL}/analyze/${encodeURIComponent(symbol)}/${tf}`);
-                const json = await res.json();
-                if(json.status === 'success') {
-                    document.getElementById('loading').style.display='none'; document.getElementById('analyzer-view').style.display='block';
-                    document.getElementById('stockName').innerText = json.data.symbol; document.getElementById('stockPrice').innerText = "₹" + json.data.latest_close;
-                    currentPrice = json.data.latest_close; currentRsi = json.data.historical_chart_data[json.data.historical_chart_data.length - 1].rsi;
-                    addChatMessage(json.data.ai_prediction, 'ai');
-                    renderChart(json.data.historical_chart_data);
-                } else { alert("⚠️ Error: " + json.message); goHome(); }
-            } catch (err) { alert("⚠️ Server waking up. Please try again."); goHome(); }
-        }
+                    // Sectors
+                    let sHtml = "";
+                    data.sectoral.data.forEach(item => {
+                        let css = item.chng > 0 ? "green" : "red";
+                        sHtml += `<tr><td><b>${item.name}</b></td><td>${item.ltp}</td><td class="${css}">${item.chng > 0 ? '+':''}${item.chng}%</td></tr>`;
+                    });
+                    document.getElementById('sector-table').querySelector('tbody').innerHTML = sHtml;
 
-        function handleChat(e) { if(e.key === 'Enter') sendChatMessage(); }
-        function addChatMessage(text, sender, isAlert = false) {
-            const history = document.getElementById('chatHistory');
-            const msgDiv = document.createElement('div');
-            msgDiv.className = `chat-msg ${sender}`;
-            if(isAlert) msgDiv.classList.add('alert');
-            msgDiv.innerText = text;
-            history.appendChild(msgDiv); history.scrollTop = history.scrollHeight;
-        }
+                    // Gainers
+                    let gHtml = "";
+                    data.live_data.top_gainers.forEach(item => {
+                        gHtml += `<tr><td>${getTVLink(item.Symbol)}</td><td>${item.LTP}</td><td class="green">+${item.Change}%</td></tr>`;
+                    });
+                    document.getElementById('gainer-table').querySelector('tbody').innerHTML = gHtml;
 
-        async function sendChatMessage(customMsg = null, isSilent = false) {
-            const input = document.getElementById('chatInput');
-            const message = customMsg || input.value.trim();
-            if(!message) return;
-            
-            if(!isSilent) { input.value = ''; addChatMessage(message, 'user'); }
-            const tf = document.getElementById('timeframeSelector').value;
-            const history = document.getElementById('chatHistory');
-            const loadingId = 'loading-' + Date.now();
-            
-            if(!isSilent) {
-                const loadingDiv = document.createElement('div');
-                loadingDiv.className = 'chat-msg ai'; loadingDiv.id = loadingId; loadingDiv.innerText = "Processing...";
-                history.appendChild(loadingDiv); history.scrollTop = history.scrollHeight;
-            }
-
-            try {
-                const res = await fetch(`${API_BASE_URL}/chat`, {
-                    method: 'POST', headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ symbol: currentSymbol, timeframe: tf, message: message, price: currentPrice, rsi: currentRsi, is_home: false })
-                });
-                const json = await res.json();
-                if(!isSilent) document.getElementById(loadingId).remove();
-                if(json.status === 'success') { addChatMessage(isSilent ? "🚨 LIVE UPDATE: " + json.reply : json.reply, 'ai', isSilent); } 
-                else if(!isSilent) { addChatMessage("⚠️ Error: " + json.message, 'ai'); }
-            } catch (e) { if(!isSilent) { document.getElementById(loadingId).remove(); addChatMessage("⚠️ Network Error.", 'ai'); } }
-        }
-
-        function toggleAutoAlert() {
-            isAutoAlertOn = !isAutoAlertOn;
-            const btn = document.getElementById('btnAutoAlert');
-            if(isAutoAlertOn) {
-                btn.classList.add('active'); btn.innerText = "🚨 Auto AI Alerts: ON";
-                addChatMessage("🔔 Auto-Alerts ON. Scanning chart every 3 mins...", 'ai');
-                autoAlertInterval = setInterval(runSilentAnalysis, 180000);
-            } else {
-                btn.classList.remove('active'); btn.innerText = "🚨 Auto AI Alerts: OFF";
-                addChatMessage("🔕 Auto-Alerts OFF.", 'ai');
-                clearInterval(autoAlertInterval);
-            }
-        }
-
-        async function runSilentAnalysis() {
-            if(!currentSymbol) return;
-            const tf = document.getElementById('timeframeSelector').value;
-            try {
-                const res = await fetch(`${API_BASE_URL}/analyze/${encodeURIComponent(currentSymbol)}/${tf}`);
-                const json = await res.json();
-                if(json.status === 'success') {
-                    currentPrice = json.data.latest_close; currentRsi = json.data.historical_chart_data[json.data.historical_chart_data.length - 1].rsi;
-                    document.getElementById('stockPrice').innerText = "₹" + currentPrice;
-                    updateChartData(json.data.historical_chart_data);
-                    const silentPrompt = `Price is ₹${currentPrice}. Check Ichimoku/Pivots for new moves. Reply direct and short in Hinglish.`;
-                    sendChatMessage(silentPrompt, true);
+                    // Losers
+                    let lHtml = "";
+                    data.live_data.top_losers.forEach(item => {
+                        lHtml += `<tr><td>${getTVLink(item.Symbol)}</td><td>${item.LTP}</td><td class="red">${item.Change}%</td></tr>`;
+                    });
+                    document.getElementById('loser-table').querySelector('tbody').innerHTML = lHtml;
                 }
-            } catch (err) {}
+            } catch (e) { console.error("Sync failed"); }
         }
 
-        function updateChartData(data) {
-            if(!chart || !candleSeries) return;
-            const uniqueData = Array.from(new Map(data.map(item => [item.time, item])).values());
-            candleSeries.setData(uniqueData);
-            if(tenkanSeries) tenkanSeries.setData(uniqueData.filter(d => d.tenkan !== null).map(d => ({time: d.time, value: d.tenkan})));
-            if(kijunSeries) kijunSeries.setData(uniqueData.filter(d => d.kijun !== null).map(d => ({time: d.time, value: d.kijun})));
-            if(spanASeries) spanASeries.setData(uniqueData.filter(d => d.span_a !== null).map(d => ({time: d.time, value: d.span_a})));
-            if(spanBSeries) spanBSeries.setData(uniqueData.filter(d => d.span_b !== null).map(d => ({time: d.time, value: d.span_b})));
-            if(chikouSeries) chikouSeries.setData(uniqueData.filter(d => d.chikou !== null).map(d => ({time: d.time, value: d.chikou})));
-        }
+        // AI Chat Logic
+        async function askBhai() {
+            const box = document.getElementById('user-input');
+            const logs = document.getElementById('chat-logs');
+            const text = box.value;
+            if(!text) return;
 
-        function renderChart(data) {
-            const chartDom = document.getElementById('tv-chart');
-            if(chart) { chart.remove(); chart=null; }
-            chartDom.innerHTML = ""; 
-            const uniqueData = Array.from(new Map(data.map(item => [item.time, item])).values());
-            chart = LightweightCharts.createChart(chartDom, { layout: { background: { type: 'solid', color: '#131722' }, textColor: '#d1d4dc', }, grid: { vertLines: { color: '#1f2933' }, horzLines: { color: '#1f2933' }, }, timeScale: { borderColor: '#2b2b43', timeVisible: true, rightOffset: 5 }, crosshair: { mode: LightweightCharts.CrosshairMode.Normal }});
-            candleSeries = chart.addCandlestickSeries({ upColor: '#089981', downColor: '#f23645', borderVisible: false, wickUpColor: '#089981', wickDownColor: '#f23645', });
-            candleSeries.setData(uniqueData);
-            
-            tenkanSeries = chart.addLineSeries({ color: '#f23645', lineWidth: 1, title: 'Tenkan', visible: ichiVisible }); tenkanSeries.setData(uniqueData.filter(d => d.tenkan !== null).map(d => ({time: d.time, value: d.tenkan})));
-            kijunSeries = chart.addLineSeries({ color: '#2962ff', lineWidth: 1, title: 'Kijun', visible: ichiVisible }); kijunSeries.setData(uniqueData.filter(d => d.kijun !== null).map(d => ({time: d.time, value: d.kijun})));
-            spanASeries = chart.addLineSeries({ color: '#ffeb3b', lineWidth: 1, title: 'Span A', visible: ichiVisible }); spanASeries.setData(uniqueData.filter(d => d.span_a !== null).map(d => ({time: d.time, value: d.span_a})));
-            spanBSeries = chart.addLineSeries({ color: '#089981', lineWidth: 1, title: 'Span B', visible: ichiVisible }); spanBSeries.setData(uniqueData.filter(d => d.span_b !== null).map(d => ({time: d.time, value: d.span_b})));
-            chikouSeries = chart.addLineSeries({ color: '#ffffff', lineWidth: 1, lineStyle: 2, title: 'Chikou', visible: ichiVisible }); chikouSeries.setData(uniqueData.filter(d => d.chikou !== null).map(d => ({time: d.time, value: d.chikou})));
+            logs.innerHTML += `<div class="msg user-msg">${text}</div>`;
+            box.value = "";
+            logs.scrollTop = logs.scrollHeight;
 
-            const pivotLevels = [ { key: 'p', title: 'P' }, { key: 'r1', title: 'R1' }, { key: 'r2', title: 'R2' }, { key: 'r3', title: 'R3' }, { key: 'r4', title: 'R4' }, { key: 'r5', title: 'R5' }, { key: 's1', title: 'S1' }, { key: 's2', title: 'S2' }, { key: 's3', title: 'S3' }, { key: 's4', title: 'S4' }, { key: 's5', title: 'S5' } ];
-            pivotLines = [];
-            const groupedByDay = {};
-            uniqueData.forEach(d => { const dayStr = new Date(d.time * 1000).toDateString(); if(!groupedByDay[dayStr]) groupedByDay[dayStr] = []; groupedByDay[dayStr].push(d); });
-            const days = Object.values(groupedByDay);
-            days.forEach((dayData, index) => {
-                const isLastDay = index === days.length - 1; 
-                pivotLevels.forEach(level => {
-                    const lineData = dayData.filter(d => d[level.key] !== null).map(d => ({time: d.time, value: d[level.key]}));
-                    if(lineData.length > 0) {
-                        const lineSeries = chart.addLineSeries({ color: '#ff9800', lineWidth: 1, lineStyle: 0, title: isLastDay ? level.title : '', crosshairMarkerVisible: false, lastValueVisible: isLastDay, visible: pivotsVisible, autoscaleInfoProvider: () => null, });
-                        lineSeries.setData(lineData); pivotLines.push(lineSeries);
-                    }
+            try {
+                const res = await fetch(`${API_URL}/api/chat`, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({message: text})
                 });
-            });
-            chart.timeScale().fitContent();
+                const d = await res.json();
+                logs.innerHTML += `<div class="msg ai-msg">${d.reply}</div>`;
+                logs.scrollTop = logs.scrollHeight;
+            } catch(e) { logs.innerHTML += `<div class="msg ai-msg">Network error bhai!</div>`; }
         }
 
-        function toggleIchimoku() { ichiVisible = !ichiVisible; document.getElementById('btnIchimoku').classList.toggle('active', ichiVisible); if(tenkanSeries) tenkanSeries.applyOptions({visible: ichiVisible}); if(kijunSeries) kijunSeries.applyOptions({visible: ichiVisible}); if(spanASeries) spanASeries.applyOptions({visible: ichiVisible}); if(spanBSeries) spanBSeries.applyOptions({visible: ichiVisible}); if(chikouSeries) chikouSeries.applyOptions({visible: ichiVisible}); }
-        function togglePivots() { pivotsVisible = !pivotsVisible; document.getElementById('btnPivots').classList.toggle('active', pivotsVisible); pivotLines.forEach(line => line.applyOptions({visible: pivotsVisible})); }
-
-        fetchStocks();
+        // Execute on Load
+        setInterval(updateData, 30000);
+        updateData();
     </script>
 </body>
 </html>
