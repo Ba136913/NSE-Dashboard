@@ -3,196 +3,133 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>NSE Master Dashboard | Pro Trader</title>
+    <title>NSE Pro Dashboard + AI</title>
     <style>
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f4f6f9; margin: 0; padding: 20px; }
-        .header { background-color: #1e293b; color: white; text-align: center; padding: 20px; border-radius: 10px; margin-bottom: 20px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
-        h1 { margin: 0; font-size: 26px; letter-spacing: 1px; }
-        .time-box { font-size: 14px; color: #cbd5e1; margin-top: 8px; font-weight: bold; }
+        body { font-family: 'Segoe UI', sans-serif; background: #f0f2f5; margin: 0; padding: 20px; }
+        .header { background: #1e293b; color: white; text-align: center; padding: 20px; border-radius: 12px; margin-bottom: 20px; }
+        .sentiment-card { background: white; padding: 15px; border-radius: 12px; text-align: center; margin-bottom: 20px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
+        .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(350px, 1fr)); gap: 20px; }
+        .card { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.08); }
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+        th, td { padding: 10px; text-align: left; border-bottom: 1px solid #eee; font-size: 14px; }
+        .green { color: #10b981; font-weight: bold; }
+        .red { color: #ef4444; font-weight: bold; }
         
-        .dashboard-container { display: flex; flex-direction: column; gap: 20px; max-width: 1200px; margin: 0 auto; }
-        .row { display: flex; gap: 20px; flex-wrap: wrap; }
-        .card { background: white; border-radius: 10px; box-shadow: 0 4px 10px rgba(0,0,0,0.08); padding: 20px; flex: 1; min-width: 320px; overflow-x: auto; }
-        
-        h2 { margin-top: 0; font-size: 18px; text-transform: uppercase; padding-bottom: 10px; border-bottom: 2px solid #f1f5f9; text-align: center; }
-        .sector-title { color: #3b82f6; } .gainers-title { color: #10b981; } .losers-title { color: #ef4444; }
-        
-        table { width: 100%; border-collapse: collapse; }
-        th, td { padding: 12px 10px; text-align: left; border-bottom: 1px solid #f1f5f9; font-size: 14px; }
-        th { background-color: #f8fafc; color: #475569; font-weight: 600; }
-        tr:hover { background-color: #f8fafc; }
-        
-        .green-text { color: #10b981; font-weight: bold; }
-        .red-text { color: #ef4444; font-weight: bold; }
-        
-        .tv-link { 
-            font-weight: bold; 
-            color: #2563eb; 
-            text-decoration: none; 
-            cursor: pointer;
-            padding: 2px 5px;
-            border-radius: 4px;
-            transition: all 0.2s ease;
-        }
-        .tv-link:hover { 
-            background-color: #e2e8f0; 
-            text-decoration: underline; 
-            color: #1e3a8a;
-        }
-
-        .loading { text-align: center; font-size: 18px; font-weight: bold; color: #f59e0b; padding: 40px; }
+        /* AI Chat Box Styles */
+        #chat-box { position: fixed; bottom: 20px; right: 20px; width: 320px; height: 400px; background: white; border-radius: 15px; box-shadow: 0 10px 30px rgba(0,0,0,0.2); display: flex; flex-direction: column; overflow: hidden; border: 1px solid #ddd; }
+        #chat-header { background: #3b82f6; color: white; padding: 12px; font-weight: bold; cursor: pointer; }
+        #chat-logs { flex: 1; padding: 10px; overflow-y: auto; background: #f9fafb; font-size: 13px; }
+        .msg { margin-bottom: 10px; padding: 8px 12px; border-radius: 10px; max-width: 80%; }
+        .user-msg { background: #3b82f6; color: white; align-self: flex-end; margin-left: auto; }
+        .ai-msg { background: #e5e7eb; color: #1f2937; }
+        #chat-input-area { display: flex; padding: 10px; border-top: 1px solid #eee; }
+        #chat-input { flex: 1; border: 1px solid #ddd; padding: 8px; border-radius: 5px; outline: none; }
     </style>
 </head>
 <body>
 
-    <div class="dashboard-container">
-        <div class="header">
-            <h1>🚀 NSE MASTER DASHBOARD</h1>
-            <div class="time-box" id="timestamp">⏳ Server se connect ho raha hai...</div>
+    <div class="header">
+        <h1>🚀 NSE MASTER DASHBOARD</h1>
+        <div id="last-updated">⏳ Fetching live data...</div>
+    </div>
+
+    <div class="sentiment-card">
+        <h3>Current Market Mood</h3>
+        <div id="sentiment-label" style="font-size: 24px; font-weight: bold;">Loading...</div>
+    </div>
+
+    <div class="grid">
+        <div class="card">
+            <h3 style="color: #3b82f6;">📊 Sectoral Performance</h3>
+            <table id="sector-table"><tbody></tbody></table>
         </div>
-
-        <div id="loading-msg" class="loading">
-            🚀 Data Load Ho Raha Hai... <br>
-            <small style="font-weight: normal; color: #64748b;">Pehli baar mein 10-15 seconds lag sakte hain (Render Sleep Mode)</small>
+        <div class="card">
+            <h3 style="color: #10b981;">🟢 Top Gainers</h3>
+            <table id="gainer-table"><tbody></tbody></table>
         </div>
+        <div class="card">
+            <h3 style="color: #ef4444;">🔴 Top Losers</h3>
+            <table id="loser-table"><tbody></tbody></table>
+        </div>
+    </div>
 
-        <div id="main-content" style="display: none;">
-            <div class="card" style="margin-bottom: 20px;">
-                <h2 class="sector-title">📊 LIVE SECTORAL INDICES</h2>
-                <table>
-                    <thead>
-                        <tr>
-                            <th>Index Name</th>
-                            <th>LTP (₹)</th>
-                            <th>% Change</th>
-                            <th>Open</th>
-                        </tr>
-                    </thead>
-                    <tbody id="sectors-body"></tbody>
-                </table>
-            </div>
-
-            <div class="row">
-                <div class="card">
-                    <h2 class="gainers-title">🟢 TOP 20 GAINERS</h2>
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>Symbol</th>
-                                <th>LTP</th>
-                                <th>% Chng</th>
-                                <th>Volume</th>
-                            </tr>
-                        </thead>
-                        <tbody id="gainers-body"></tbody>
-                    </table>
-                </div>
-
-                <div class="card">
-                    <h2 class="losers-title">🔴 TOP 20 LOSERS</h2>
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>Symbol</th>
-                                <th>LTP</th>
-                                <th>% Chng</th>
-                                <th>Volume</th>
-                            </tr>
-                        </thead>
-                        <tbody id="losers-body"></tbody>
-                    </table>
-                </div>
-            </div>
+    <div id="chat-box">
+        <div id="chat-header">💬 Chat with Gemini Bhai</div>
+        <div id="chat-logs" style="display: flex; flex-direction: column;">
+            <div class="msg ai-msg">Bhai! Market ka data ready hai, kuch bhi puch lo. 🔥</div>
+        </div>
+        <div id="chat-input-area">
+            <input type="text" id="chat-input" placeholder="Type message...">
+            <button onclick="sendToAI()" style="margin-left:5px; cursor:pointer;">Send</button>
         </div>
     </div>
 
     <script>
-        const API_BASE_URL = "https://nse-top-gainer-and-loser.onrender.com"; 
+        const API_BASE = "https://nse-top-gainer-and-loser.onrender.com";
 
-        function getTradingViewUrl(symbol, isIndex = false) {
-            let tvSymbol = symbol;
-            if (isIndex) {
-                const indexMap = {
-                    "NIFTY BANK": "BANKNIFTY", "NIFTY IT": "CNXIT", "NIFTY AUTO": "CNXAUTO",
-                    "NIFTY PHARMA": "CNXPHARMA", "NIFTY FMCG": "CNXFMCG", "NIFTY METAL": "CNXMETAL",
-                    "NIFTY REALTY": "CNXREALTY", "NIFTY MEDIA": "CNXMEDIA", "NIFTY ENERGY": "CNXENERGY",
-                    "NIFTY PSU BANK": "CNXPSUBANK", "NIFTY FINANCIAL SERVICES": "FINNIFTY",
-                    "NIFTY PRIVATE BANK": "NIFTYPVTBANK", "NIFTY HEALTHCARE INDEX": "NIFTY_HEALTHCARE"
-                };
-                tvSymbol = indexMap[symbol] || symbol.replace(/ & /g, '_').replace(/ /g, '_');
-            } else {
-                tvSymbol = tvSymbol.replace(/&/g, '_');
-            }
-            return `https://in.tradingview.com/chart/?symbol=NSE:${encodeURIComponent(tvSymbol)}`;
-        }
-
-        async function updateDashboard() {
+        async function refreshData() {
             try {
-                const [sectoralRes, gainersLosersRes] = await Promise.all([
-                    fetch(`${API_BASE_URL}/api/sectoral-indices`),
-                    fetch(`${API_BASE_URL}/api/live-data`)
-                ]);
+                const res = await fetch(`${API_BASE}/api/all-data`);
+                const d = await res.json();
+                
+                if(d.last_updated !== "Wait...") {
+                    document.getElementById('last-updated').innerText = "✅ Updated: " + d.last_updated;
+                    
+                    // Sentiment
+                    const s = document.getElementById('sentiment-label');
+                    s.innerText = d.sentiment.label;
+                    s.style.color = d.sentiment.color;
 
-                const sectoralData = await sectoralRes.json();
-                const marketData = await gainersLosersRes.json();
-
-                // Check if data is actually ready on server
-                if (sectoralData.status === 'success' && marketData.status === 'success') {
-                    document.getElementById('loading-msg').style.display = "none";
-                    document.getElementById('main-content').style.display = "block";
-                    document.getElementById('timestamp').innerText = "✅ Last Updated: " + (marketData.timestamp || "Just Now");
-
-                    // 1. Render Sectors
-                    let secHTML = "";
-                    sectoralData.data.forEach(sec => {
-                        let colorClass = sec.Percent_Change > 0 ? "green-text" : "red-text";
-                        let sign = sec.Percent_Change > 0 ? "+" : "";
-                        secHTML += `<tr>
-                            <td><a href="${getTradingViewUrl(sec.Index_Name, true)}" target="_blank" class="tv-link">${sec.Index_Name} 📈</a></td>
-                            <td>${sec.Current_LTP}</td>
-                            <td class="${colorClass}">${sign}${sec.Percent_Change}%</td>
-                            <td>${sec.Open_Price}</td>
-                        </tr>`;
+                    // Sectors
+                    let sHtml = "";
+                    d.sectoral.data.forEach(idx => {
+                        sHtml += `<tr><td>${idx.name}</td><td class="${idx.chng > 0 ? 'green':'red'}">${idx.chng}%</td></tr>`;
                     });
-                    document.getElementById('sectors-body').innerHTML = secHTML;
+                    document.getElementById('sector-table').innerHTML = sHtml;
 
-                    // 2. Render Gainers
-                    let gainersHTML = "";
-                    marketData.data.top_gainers.forEach(stock => {
-                        gainersHTML += `<tr>
-                            <td><a href="${getTradingViewUrl(stock.Symbol, false)}" target="_blank" class="tv-link">${stock.Symbol} 📈</a></td>
-                            <td>${stock.LTP}</td>
-                            <td class="green-text">+${stock.Change_Percent}%</td>
-                            <td>${stock.Volume}</td>
-                        </tr>`;
+                    // Gainers
+                    let gHtml = "";
+                    d.live_data.top_gainers.forEach(stk => {
+                        gHtml += `<tr><td>${stk.Symbol}</td><td>${stk.LTP}</td><td class="green">+${stk.Change}%</td></tr>`;
                     });
-                    document.getElementById('gainers-body').innerHTML = gainersHTML;
+                    document.getElementById('gainer-table').innerHTML = gHtml;
 
-                    // 3. Render Losers
-                    let losersHTML = "";
-                    marketData.data.top_losers.forEach(stock => {
-                        losersHTML += `<tr>
-                            <td><a href="${getTradingViewUrl(stock.Symbol, false)}" target="_blank" class="tv-link">${stock.Symbol} 📉</a></td>
-                            <td>${stock.LTP}</td>
-                            <td class="red-text">${stock.Change_Percent}%</td>
-                            <td>${stock.Volume}</td>
-                        </tr>`;
+                    // Losers
+                    let lHtml = "";
+                    d.live_data.top_losers.forEach(stk => {
+                        lHtml += `<tr><td>${stk.Symbol}</td><td>${stk.LTP}</td><td class="red">${stk.Change}%</td></tr>`;
                     });
-                    document.getElementById('losers-body').innerHTML = losersHTML;
-                } else {
-                    document.getElementById('timestamp').innerText = "⏳ Server is collecting data from NSE... Refreshing in 5s";
-                    setTimeout(updateDashboard, 5000); // Retry soon if loading
+                    document.getElementById('loser-table').innerHTML = lHtml;
                 }
-            } catch (error) {
-                console.error("Fetch Error:", error);
-                document.getElementById('timestamp').innerText = "❌ Connection Error. Backend might be sleeping.";
+            } catch (e) { console.log("Fetch Error"); }
+        }
+
+        async function sendToAI() {
+            const input = document.getElementById('chat-input');
+            const logs = document.getElementById('chat-logs');
+            if(!input.value) return;
+
+            const userText = input.value;
+            logs.innerHTML += `<div class="msg user-msg">${userText}</div>`;
+            input.value = "";
+            logs.scrollTop = logs.scrollHeight;
+
+            try {
+                const res = await fetch(`${API_BASE}/api/chat`, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({message: userText})
+                });
+                const data = await res.json();
+                logs.innerHTML += `<div class="msg ai-msg">${data.reply}</div>`;
+                logs.scrollTop = logs.scrollHeight;
+            } catch(e) {
+                logs.innerHTML += `<div class="msg ai-msg">Error hai bhai!</div>`;
             }
         }
 
-        // Initial Call
-        updateDashboard();
-        // Auto Update every 2 minutes
-        setInterval(updateDashboard, 120000); 
+        setInterval(refreshData, 30000);
+        refreshData();
     </script>
 </body>
 </html>
