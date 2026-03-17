@@ -3,151 +3,146 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Live NSE F&O Dashboard</title>
+    <title>My NSE Live Dashboard</title>
     <style>
         body {
-            font-family: Arial, sans-serif;
-            background-color: #f0f0f0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f4f6f9;
             margin: 0;
             padding: 20px;
         }
+        .header {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        .time-box {
+            font-size: 16px;
+            color: #555;
+            margin-bottom: 20px;
+        }
         .container {
-            max-width: 1200px;
-            margin: 0 auto;
-            background-color: white;
-            padding: 20px;
+            display: flex;
+            gap: 20px;
+            justify-content: center;
+        }
+        .table-wrapper {
+            background: white;
             border-radius: 8px;
-            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            padding: 20px;
+            width: 45%;
         }
-        h1 {
-            text-align: center;
-            color: #333;
+        h2 {
+            margin-top: 0;
         }
-        .loading {
-            text-align: center;
-            font-size: 24px;
-            color: #666;
-        }
+        .gainers-title { color: #008000; }
+        .losers-title { color: #d32f2f; }
         table {
             width: 100%;
             border-collapse: collapse;
-            margin-bottom: 20px;
         }
         th, td {
-            border: 1px solid #ddd;
-            padding: 8px;
-            text-align: center;
+            padding: 10px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
         }
         th {
-            background-color: #f2f2f2;
+            background-color: #f8f9fa;
             color: #333;
         }
-        .gainers th {
-            background-color: #d4edda;
-            color: green;
-        }
-        .losers th {
-            background-color: #f8d7da;
-            color: red;
-        }
-        .gain { color: green; }
-        .loss { color: red; }
-        .timestamp {
-            text-align: center;
-            margin-top: 20px;
-            color: #666;
-        }
+        .green-text { color: #008000; font-weight: bold; }
+        .red-text { color: #d32f2f; font-weight: bold; }
+        .loader { text-align: center; font-size: 18px; color: #666; }
     </style>
 </head>
 <body>
-    <div class="container">
-        <h1>🟡 Live NSE F&O Market Dashboard</h1>
-        <div id="loading" class="loading">Loading / Fetching Data...</div>
-        <div id="content" style="display: none;">
-            <h2>🟢 Top 20 Gainers</h2>
-            <table class="gainers">
+
+    <div class="header">
+        <h1>📊 Live F&O Market Dashboard</h1>
+        <div class="time-box" id="timestamp">Fetching live data... Please wait.</div>
+    </div>
+
+    <div class="container" id="data-container" style="display: none;">
+        <div class="table-wrapper">
+            <h2 class="gainers-title">🟢 Top 20 Gainers</h2>
+            <table>
                 <thead>
                     <tr>
                         <th>Symbol</th>
                         <th>LTP (₹)</th>
                         <th>% Change</th>
+                        <th>Volume</th>
                     </tr>
                 </thead>
-                <tbody id="gainers-body"></tbody>
+                <tbody id="gainers-body">
+                    </tbody>
             </table>
-            <h2>🔴 Top 20 Losers</h2>
-            <table class="losers">
+        </div>
+
+        <div class="table-wrapper">
+            <h2 class="losers-title">🔴 Top 20 Losers</h2>
+            <table>
                 <thead>
                     <tr>
                         <th>Symbol</th>
                         <th>LTP (₹)</th>
                         <th>% Change</th>
+                        <th>Volume</th>
                     </tr>
                 </thead>
-                <tbody id="losers-body"></tbody>
+                <tbody id="losers-body">
+                    </tbody>
             </table>
-            <div class="timestamp" id="timestamp"></div>
         </div>
     </div>
 
     <script>
-        const API_URL = '/api/live-data';
-
-        async function fetchData() {
+        // API se data laane wala function
+        async function fetchMarketData() {
             try {
-                const response = await fetch(API_URL);
-                if (response.ok) {
-                    const data = await response.json();
-                    displayData(data.gainers, data.losers, data.last_updated);
-                } else {
-                    throw new Error('Failed to fetch data');
+                // Local PC par chal raha backend server call kar rahe hain
+                const response = await fetch('http://127.0.0.1:8000/api/live-data');
+                const result = await response.json();
+
+                if (result.status === 'success') {
+                    document.getElementById('timestamp').innerText = "Last Updated: " + result.timestamp + " IST (Auto-refreshes every 2 minutes)";
+                    document.getElementById('data-container').style.display = "flex";
+
+                    // Gainers table update
+                    let gainersHTML = "";
+                    result.data.top_gainers.forEach(stock => {
+                        gainersHTML += `<tr>
+                            <td><strong>${stock.Symbol}</strong></td>
+                            <td>${stock.LTP}</td>
+                            <td class="green-text">+${stock.Change_Percent}%</td>
+                            <td>${stock.Volume}</td>
+                        </tr>`;
+                    });
+                    document.getElementById('gainers-body').innerHTML = gainersHTML;
+
+                    // Losers table update
+                    let losersHTML = "";
+                    result.data.top_losers.forEach(stock => {
+                        losersHTML += `<tr>
+                            <td><strong>${stock.Symbol}</strong></td>
+                            <td>${stock.LTP}</td>
+                            <td class="red-text">${stock.Change_Percent}%</td>
+                            <td>${stock.Volume}</td>
+                        </tr>`;
+                    });
+                    document.getElementById('losers-body').innerHTML = losersHTML;
                 }
             } catch (error) {
-                console.error('Error fetching data:', error);
-                setTimeout(fetchData, 5000);  // Retry after 5 seconds
+                console.error("Error fetching data:", error);
+                document.getElementById('timestamp').innerText = "Error loading data. Is your Python backend running?";
             }
         }
 
-        function displayData(gainers, losers, lastUpdated) {
-            const loading = document.getElementById('loading');
-            const content = document.getElementById('content');
-            loading.style.display = 'none';
-            content.style.display = 'block';
+        // Pehli baar data laao
+        fetchMarketData();
 
-            const gainersBody = document.getElementById('gainers-body');
-            const losersBody = document.getElementById('losers-body');
-
-            gainersBody.innerHTML = '';
-            losersBody.innerHTML = '';
-
-            gainers.forEach(stock => {
-                const row = `<tr>
-                    <td>${stock.symbol}</td>
-                    <td>${stock.ltp}</td>
-                    <td class="gain">${stock.change}%</td>
-                </tr>`;
-                gainersBody.innerHTML += row;
-            });
-
-            losers.forEach(stock => {
-                const row = `<tr>
-                    <td>${stock.symbol}</td>
-                    <td>${stock.ltp}</td>
-                    <td class="loss">${stock.change}%</td>
-                </tr>`;
-                losersBody.innerHTML += row;
-            });
-
-            const timestampDiv = document.getElementById('timestamp');
-            const date = new Date(lastUpdated * 1000);
-            timestampDiv.textContent = `Last Updated: ${date.toLocaleString()}`;
-        }
-
-        // Initial load
-        fetchData();
-
-        // Refresh every 2 minutes
-        setInterval(fetchData, 120000);
+        // Har 120 seconds (2 minute) me background me data update karo
+        setInterval(fetchMarketData, 120000);
     </script>
 </body>
 </html>
