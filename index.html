@@ -5,54 +5,19 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>My NSE Live Dashboard</title>
     <style>
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background-color: #f4f6f9;
-            margin: 0;
-            padding: 20px;
-        }
-        .header {
-            text-align: center;
-            margin-bottom: 20px;
-        }
-        .time-box {
-            font-size: 16px;
-            color: #555;
-            margin-bottom: 20px;
-        }
-        .container {
-            display: flex;
-            gap: 20px;
-            justify-content: center;
-        }
-        .table-wrapper {
-            background: white;
-            border-radius: 8px;
-            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-            padding: 20px;
-            width: 45%;
-        }
-        h2 {
-            margin-top: 0;
-        }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f4f6f9; margin: 0; padding: 20px; }
+        .header { text-align: center; margin-bottom: 20px; }
+        .time-box { font-size: 16px; color: #555; margin-bottom: 20px; }
+        .container { display: flex; gap: 20px; justify-content: center; flex-wrap: wrap; }
+        .table-wrapper { background: white; border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.1); padding: 20px; width: 45%; min-width: 300px; }
+        h2 { margin-top: 0; }
         .gainers-title { color: #008000; }
         .losers-title { color: #d32f2f; }
-        table {
-            width: 100%;
-            border-collapse: collapse;
-        }
-        th, td {
-            padding: 10px;
-            text-align: left;
-            border-bottom: 1px solid #ddd;
-        }
-        th {
-            background-color: #f8f9fa;
-            color: #333;
-        }
+        table { width: 100%; border-collapse: collapse; }
+        th, td { padding: 10px; text-align: left; border-bottom: 1px solid #ddd; }
+        th { background-color: #f8f9fa; color: #333; }
         .green-text { color: #008000; font-weight: bold; }
         .red-text { color: #d32f2f; font-weight: bold; }
-        .loader { text-align: center; font-size: 18px; color: #666; }
     </style>
 </head>
 <body>
@@ -66,61 +31,48 @@
         <div class="table-wrapper">
             <h2 class="gainers-title">🟢 Top 20 Gainers</h2>
             <table>
-                <thead>
-                    <tr>
-                        <th>Symbol</th>
-                        <th>LTP (₹)</th>
-                        <th>% Change</th>
-                        <th>Volume</th>
-                    </tr>
-                </thead>
-                <tbody id="gainers-body">
-                    </tbody>
+                <thead><tr><th>Symbol</th><th>LTP (₹)</th><th>% Change</th><th>Volume</th></tr></thead>
+                <tbody id="gainers-body"></tbody>
             </table>
         </div>
 
         <div class="table-wrapper">
             <h2 class="losers-title">🔴 Top 20 Losers</h2>
             <table>
-                <thead>
-                    <tr>
-                        <th>Symbol</th>
-                        <th>LTP (₹)</th>
-                        <th>% Change</th>
-                        <th>Volume</th>
-                    </tr>
-                </thead>
-                <tbody id="losers-body">
-                    </tbody>
+                <thead><tr><th>Symbol</th><th>LTP (₹)</th><th>% Change</th><th>Volume</th></tr></thead>
+                <tbody id="losers-body"></tbody>
             </table>
         </div>
     </div>
 
     <script>
-        // API se data laane wala function
+        // 🚀 FIX 1: Yahan tera Live Render URL aayega (Localhost hata diya)
+        const API_URL = "https://nse-top-gainer-and-loser.onrender.com/api/live-data";
+
         async function fetchMarketData() {
             try {
-                // Local PC par chal raha backend server call kar rahe hain
-                const response = await fetch('http://127.0.0.1:8000/api/live-data');
+                const response = await fetch(API_URL);
                 const result = await response.json();
 
                 if (result.status === 'success') {
                     document.getElementById('timestamp').innerText = "Last Updated: " + result.timestamp + " IST (Auto-refreshes every 2 minutes)";
                     document.getElementById('data-container').style.display = "flex";
 
-                    // Gainers table update
+                    // Gainers
                     let gainersHTML = "";
                     result.data.top_gainers.forEach(stock => {
+                        // FIX 2: Smart + sign logic
+                        let sign = stock.Change_Percent > 0 ? "+" : ""; 
                         gainersHTML += `<tr>
                             <td><strong>${stock.Symbol}</strong></td>
                             <td>${stock.LTP}</td>
-                            <td class="green-text">+${stock.Change_Percent}%</td>
+                            <td class="green-text">${sign}${stock.Change_Percent}%</td>
                             <td>${stock.Volume}</td>
                         </tr>`;
                     });
                     document.getElementById('gainers-body').innerHTML = gainersHTML;
 
-                    // Losers table update
+                    // Losers
                     let losersHTML = "";
                     result.data.top_losers.forEach(stock => {
                         losersHTML += `<tr>
@@ -134,14 +86,11 @@
                 }
             } catch (error) {
                 console.error("Error fetching data:", error);
-                document.getElementById('timestamp').innerText = "Error loading data. Is your Python backend running?";
+                document.getElementById('timestamp').innerText = "Error loading data. Backend check karo bhai!";
             }
         }
 
-        // Pehli baar data laao
         fetchMarketData();
-
-        // Har 120 seconds (2 minute) me background me data update karo
         setInterval(fetchMarketData, 120000);
     </script>
 </body>
