@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Official NSE Live Terminal</title>
+    <title>Pro Quant Terminal</title>
     <style>
         body { font-family: 'Segoe UI', Tahoma, sans-serif; background-color: #f0f4f8; margin: 0; padding: 20px; color: #333; }
         .header { text-align: center; background: #1e293b; color: white; padding: 20px; border-radius: 10px; margin-bottom: 20px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
@@ -20,13 +20,22 @@
         
         .green { color: #10b981; font-weight: bold; }
         .red { color: #ef4444; font-weight: bold; }
-        .symbol { font-weight: bold; color: #1e293b; }
+        
+        /* The Clickable Link Style */
+        .tv-link { 
+            font-weight: bold; 
+            color: #2563eb; 
+            text-decoration: none; 
+            border-bottom: 1px dashed #2563eb;
+            transition: color 0.2s;
+        }
+        .tv-link:hover { color: #1e40af; }
     </style>
 </head>
 <body>
 
     <div class="header">
-        <h1>🚀 OFFICIAL NSE F&O TERMINAL</h1>
+        <h1>🚀 LIVE F&O MARKET TERMINAL</h1>
         <div class="time-box" id="timestamp">⏳ Connecting to Server...</div>
     </div>
 
@@ -57,8 +66,13 @@
     </div>
 
     <script>
-        // 🔥 YAHAN TERA RENDER KA LINK HAI 🔥
+        // TERA RENDER LINK
         const API_URL = "https://nse-top-gainer-and-loser.onrender.com/api/live-data"; 
+
+        // Redirect Function
+        function getTVLink(symbol) {
+            return `https://in.tradingview.com/chart/?symbol=NSE:${symbol}`;
+        }
 
         async function fetchData() {
             try {
@@ -69,35 +83,56 @@
                     document.getElementById('dashboard').style.display = "grid";
                     document.getElementById('timestamp').innerText = "✅ Last Updated: " + result.timestamp + " (Auto-refresh every 1 min)";
 
+                    // Populate Indices
                     let idxHtml = "";
                     result.data.indices.forEach(item => {
-                        let cls = item.Change_Percent > 0 ? 'green' : (item.Change_Percent < 0 ? 'red' : '');
+                        let cls = item.Change_Percent > 0 ? 'green' : 'red';
                         let sign = item.Change_Percent > 0 ? '+' : '';
-                        idxHtml += `<tr><td class="symbol">${item.Index}</td><td>₹${item.LTP}</td><td class="${cls}">${sign}${item.Change_Percent}%</td></tr>`;
+                        // Removed NSE: prefix for cleaner URL link
+                        let cleanTicker = item.TV_Ticker.replace("NSE:", "");
+                        idxHtml += `<tr>
+                            <td><a href="${getTVLink(cleanTicker)}" target="_blank" class="tv-link">${item.Index} ↗</a></td>
+                            <td>₹${item.LTP}</td>
+                            <td class="${cls}">${sign}${item.Change_Percent}%</td>
+                        </tr>`;
                     });
                     document.getElementById('indices-body').innerHTML = idxHtml;
 
+                    // Populate Gainers
                     let gHtml = "";
                     result.data.top_gainers.forEach(item => {
                         let sign = item.Change_Percent > 0 ? '+' : '';
-                        gHtml += `<tr><td class="symbol">${item.Symbol}</td><td>₹${item.LTP}</td><td class="green">${sign}${item.Change_Percent}%</td></tr>`;
+                        gHtml += `<tr>
+                            <td><a href="${getTVLink(item.Symbol)}" target="_blank" class="tv-link">${item.Symbol} ↗</a></td>
+                            <td>₹${item.LTP}</td>
+                            <td class="green">${sign}${item.Change_Percent}%</td>
+                        </tr>`;
                     });
                     document.getElementById('gainers-body').innerHTML = gHtml;
 
+                    // Populate Losers
                     let lHtml = "";
                     result.data.top_losers.forEach(item => {
-                        lHtml += `<tr><td class="symbol">${item.Symbol}</td><td>₹${item.LTP}</td><td class="red">${item.Change_Percent}%</td></tr>`;
+                        lHtml += `<tr>
+                            <td><a href="${getTVLink(item.Symbol)}" target="_blank" class="tv-link">${item.Symbol} ↗</a></td>
+                            <td>₹${item.LTP}</td>
+                            <td class="red">${item.Change_Percent}%</td>
+                        </tr>`;
                     });
                     document.getElementById('losers-body').innerHTML = lHtml;
                 } else {
-                    document.getElementById('timestamp').innerText = "⏳ Server fetching NSE data... Please wait.";
+                    document.getElementById('timestamp').innerText = "⏳ Server is warming up... Please wait.";
                 }
             } catch (error) {
-                document.getElementById('timestamp').innerText = "❌ Connection Failed. Checking backend...";
+                document.getElementById('timestamp').innerText = "❌ Connection Failed. Check if Render server is live.";
             }
         }
 
         fetchData();
+        setInterval(fetchData, 60000); // 60 seconds
+    </script>
+</body>
+</html>
         setInterval(fetchData, 60000); 
     </script>
 </body>
