@@ -3,367 +3,117 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>NSE F&O Live Dashboard</title>
+    <title>My NSE Live Dashboard + AI</title>
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Segoe UI', Tahoma, sans-serif; background-color: #f4f6f9; margin: 0; padding: 20px; }
+        .header { text-align: center; margin-bottom: 20px; }
+        .time-box { font-size: 16px; color: #555; margin-bottom: 20px; }
+        .container { display: flex; gap: 20px; justify-content: center; flex-wrap: wrap; }
+        .table-wrapper { background: white; border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.1); padding: 20px; width: 45%; min-width: 300px; }
+        table { width: 100%; border-collapse: collapse; }
+        th, td { padding: 10px; text-align: left; border-bottom: 1px solid #ddd; }
+        th { background-color: #f8f9fa; }
+        .green-text { color: #008000; font-weight: bold; }
+        .red-text { color: #d32f2f; font-weight: bold; }
         
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
-            min-height: 100vh;
-            padding: 20px;
-            color: #fff;
-        }
-        
-        .header {
-            text-align: center;
-            margin-bottom: 30px;
-        }
-        
-        h1 {
-            font-size: 2rem;
-            margin-bottom: 10px;
-            color: #00d4ff;
-        }
-        
-        .status-bar {
-            display: flex;
-            justify-content: center;
-            gap: 20px;
-            align-items: center;
-            flex-wrap: wrap;
-        }
-        
-        .timestamp {
-            font-size: 14px;
-            color: #8892b0;
-        }
-        
-        .refresh-btn {
-            background: #00d4ff;
-            color: #1a1a2e;
-            border: none;
-            padding: 10px 20px;
-            border-radius: 5px;
-            cursor: pointer;
-            font-weight: 600;
-            transition: all 0.3s;
-        }
-        
-        .refresh-btn:hover {
-            background: #00a8cc;
-            transform: translateY(-2px);
-        }
-        
-        .refresh-btn:disabled {
-            background: #444;
-            cursor: not-allowed;
-            transform: none;
-        }
-        
-        .container {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
-            gap: 20px;
-            max-width: 1400px;
-            margin: 0 auto;
-        }
-        
-        .table-card {
-            background: rgba(255,255,255,0.05);
-            border-radius: 12px;
-            padding: 20px;
-            border: 1px solid rgba(255,255,255,0.1);
-        }
-        
-        .card-header {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            margin-bottom: 15px;
-            padding-bottom: 15px;
-            border-bottom: 1px solid rgba(255,255,255,0.1);
-        }
-        
-        .gainers-title { color: #00ff88; }
-        .losers-title { color: #ff4757; }
-        
-        table {
-            width: 100%;
-            border-collapse: collapse;
-        }
-        
-        th, td {
-            padding: 12px 10px;
-            text-align: left;
-            border-bottom: 1px solid rgba(255,255,255,0.05);
-        }
-        
-        th {
-            color: #8892b0;
-            font-size: 12px;
-            text-transform: uppercase;
-            font-weight: 600;
-        }
-        
-        td {
-            font-size: 14px;
-        }
-        
-        .symbol {
-            font-weight: 600;
-            color: #fff;
-        }
-        
-        .ltp {
-            font-family: 'Courier New', monospace;
-            color: #00d4ff;
-        }
-        
-        .positive { color: #00ff88; font-weight: 600; }
-        .negative { color: #ff4757; font-weight: 600; }
-        
-        .volume {
-            color: #8892b0;
-            font-size: 13px;
-        }
-        
-        .loader {
-            text-align: center;
-            padding: 60px 20px;
-        }
-        
-        .spinner {
-            width: 50px;
-            height: 50px;
-            border: 4px solid rgba(255,255,255,0.1);
-            border-top-color: #00d4ff;
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-            margin: 0 auto 20px;
-        }
-        
-        @keyframes spin {
-            to { transform: rotate(360deg); }
-        }
-        
-        .error-box {
-            background: rgba(255,71,87,0.1);
-            border: 1px solid #ff4757;
-            border-radius: 8px;
-            padding: 20px;
-            text-align: center;
-            margin: 20px auto;
-            max-width: 500px;
-        }
-        
-        .error-box h3 {
-            color: #ff4757;
-            margin-bottom: 10px;
-        }
-        
-        .error-box p {
-            color: #8892b0;
-            font-size: 14px;
-        }
-        
-        .loading-note {
-            background: rgba(0,212,255,0.1);
-            border: 1px solid #00d4ff;
-            border-radius: 8px;
-            padding: 15px;
-            text-align: center;
-            margin: 20px auto;
-            max-width: 500px;
-            color: #8892b0;
-        }
-        
-        .live-indicator {
-            display: inline-block;
-            width: 10px;
-            height: 10px;
-            background: #00ff88;
-            border-radius: 50%;
-            margin-right: 8px;
-            animation: pulse 2s infinite;
-        }
-        
-        @keyframes pulse {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.5; }
-        }
-        
-        @media (max-width: 768px) {
-            .container {
-                grid-template-columns: 1fr;
-            }
-            
-            h1 {
-                font-size: 1.5rem;
-            }
-        }
+        /* AI Chat Box */
+        .chat-container { background: white; border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.1); width: 100%; max-width: 900px; margin: 20px auto; padding: 20px; }
+        #chat-logs { height: 200px; overflow-y: auto; background: #f8fafc; padding: 10px; border-radius: 8px; margin-bottom: 10px; border: 1px solid #ddd; }
+        .msg { padding: 8px 12px; margin-bottom: 5px; border-radius: 5px; }
+        .user-msg { background: #dbeafe; text-align: right; }
+        .ai-msg { background: #e2e8f0; }
+        .input-area { display: flex; gap: 10px; }
+        #user-input { flex: 1; padding: 10px; border: 1px solid #ddd; border-radius: 5px; }
+        button { padding: 10px 20px; background: #2563eb; color: white; border: none; border-radius: 5px; cursor: pointer; }
     </style>
 </head>
 <body>
+
     <div class="header">
-        <h1>📊 NSE F&O Live Dashboard</h1>
-        <div class="status-bar">
-            <span class="timestamp" id="timestamp"><span class="live-indicator"></span>Initializing...</span>
-            <button class="refresh-btn" id="refresh-btn" onclick="fetchData()">🔄 Refresh</button>
+        <h1>📊 Live F&O Dashboard (Local Pro)</h1>
+        <div class="time-box" id="timestamp">Fetching live data... Please wait.</div>
+    </div>
+
+    <div class="chat-container">
+        <h3 style="margin-top:0;">💬 Gemini Bhai AI</h3>
+        <div id="chat-logs"><div class="msg ai-msg">Bhai! Dashboard local server pe connect ho gaya hai. Kya haal hain? 🚀</div></div>
+        <div class="input-area">
+            <input type="text" id="user-input" placeholder="Market ka haal batao...">
+            <button onclick="askAI()">Send</button>
         </div>
     </div>
 
-    <div id="error-container"></div>
-
-    <div id="loader" class="loader">
-        <div class="spinner"></div>
-        <p>Loading market data...</p>
-        <div class="loading-note">
-            ⏱️ First load may take 30-60 seconds. Data refreshes every 2 minutes.
-        </div>
-    </div>
-
-    <div id="data-container" class="container" style="display: none;">
-        <div class="table-card">
-            <div class="card-header">
-                <span class="gainers-title">🟢</span>
-                <h2 class="gainers-title">Top 20 Gainers</h2>
-            </div>
+    <div class="container" id="data-container" style="display: none;">
+        <div class="table-wrapper">
+            <h2 style="color: #008000;">🟢 Top 20 Gainers</h2>
             <table>
-                <thead>
-                    <tr>
-                        <th>Symbol</th>
-                        <th>LTP (₹)</th>
-                        <th>% Change</th>
-                        <th>Volume</th>
-                    </tr>
-                </thead>
+                <thead><tr><th>Symbol</th><th>LTP (₹)</th><th>% Change</th></tr></thead>
                 <tbody id="gainers-body"></tbody>
             </table>
         </div>
 
-        <div class="table-card">
-            <div class="card-header">
-                <span class="losers-title">🔴</span>
-                <h2 class="losers-title">Top 20 Losers</h2>
-            </div>
+        <div class="table-wrapper">
+            <h2 style="color: #d32f2f;">🔴 Top 20 Losers</h2>
             <table>
-                <thead>
-                    <tr>
-                        <th>Symbol</th>
-                        <th>LTP (₹)</th>
-                        <th>% Change</th>
-                        <th>Volume</th>
-                    </tr>
-                </thead>
+                <thead><tr><th>Symbol</th><th>LTP (₹)</th><th>% Change</th></tr></thead>
                 <tbody id="losers-body"></tbody>
             </table>
         </div>
     </div>
 
     <script>
-        let isLoading = false;
-        let retryCount = 0;
-        const MAX_RETRIES = 15;
+        const API_BASE = "http://127.0.0.1:8000"; // TERA LOCAL COMPUTER
 
-        async function fetchData() {
-            if (isLoading) return;
-            
-            isLoading = true;
-            const btn = document.getElementById('refresh-btn');
-            btn.disabled = true;
-            btn.textContent = '⏳ Loading...';
-
+        async function fetchMarketData() {
             try {
-                const response = await fetch('/api/live-data');
-                
-                // Check if response is JSON
-                const contentType = response.headers.get('content-type');
-                if (!contentType || !contentType.includes('application/json')) {
-                    throw new Error('Server returned non-JSON response');
-                }
-                
+                const response = await fetch(`${API_BASE}/api/live-data`);
                 const result = await response.json();
 
-                if (result.status === 'success' && result.data && result.data.top_gainers && result.data.top_gainers.length > 0) {
-                    document.getElementById('error-container').innerHTML = '';
-                    document.getElementById('loader').style.display = 'none';
-                    document.getElementById('data-container').style.display = 'grid';
-                    document.getElementById('timestamp').innerHTML = '<span class="live-indicator"></span>Last Updated: ' + result.timestamp + ' IST';
-                    
-                    renderTable('gainers-body', result.data.top_gainers, true);
-                    renderTable('losers-body', result.data.top_losers, false);
-                    retryCount = 0;
-                } else {
-                    throw new Error('Data not ready yet. Please wait...');
+                if (result.status === 'success') {
+                    document.getElementById('timestamp').innerText = "✅ Last Updated: " + result.timestamp;
+                    document.getElementById('data-container').style.display = "flex";
+
+                    let gainersHTML = "";
+                    result.data.top_gainers.forEach(s => {
+                        gainersHTML += `<tr><td><strong>${s.Symbol}</strong></td><td>${s.LTP}</td><td class="green-text">+${s.Change_Percent}%</td></tr>`;
+                    });
+                    document.getElementById('gainers-body').innerHTML = gainersHTML;
+
+                    let losersHTML = "";
+                    result.data.top_losers.forEach(s => {
+                        losersHTML += `<tr><td><strong>${s.Symbol}</strong></td><td>${s.LTP}</td><td class="red-text">${s.Change_Percent}%</td></tr>`;
+                    });
+                    document.getElementById('losers-body').innerHTML = losersHTML;
                 }
             } catch (error) {
-                retryCount++;
-                console.error('Fetch error:', error);
-                
-                if (retryCount >= MAX_RETRIES) {
-                    document.getElementById('loader').style.display = 'none';
-                    document.getElementById('error-container').innerHTML = `
-                        <div class="error-box">
-                            <h3>⚠️ Connection Error</h3>
-                            <p>${error.message}</p>
-                            <p style="margin-top: 10px;">Please refresh the page or try again later.</p>
-                        </div>
-                    `;
-                } else {
-                    document.getElementById('error-container').innerHTML = `
-                        <div class="loading-note">
-                            ⏱️ Still loading... (Attempt ${retryCount}/${MAX_RETRIES})<br>
-                            ${error.message}
-                        </div>
-                    `;
-                }
-            } finally {
-                isLoading = false;
-                btn.disabled = false;
-                btn.textContent = '🔄 Refresh';
+                document.getElementById('timestamp').innerText = "❌ Start Python Backend first! (uvicorn main:app)";
             }
         }
 
-        function renderTable(tbodyId, data, isGainer) {
-            const tbody = document.getElementById(tbodyId);
-            tbody.innerHTML = '';
+        async function askAI() {
+            const input = document.getElementById('user-input');
+            const logs = document.getElementById('chat-logs');
+            if(!input.value) return;
 
-            data.forEach(stock => {
-                const sign = isGainer ? '+' : '';
-                const colorClass = isGainer ? 'positive' : 'negative';
-                const volume = formatVolume(stock.Volume);
+            logs.innerHTML += `<div class="msg user-msg">${input.value}</div>`;
+            const userText = input.value;
+            input.value = "";
+            logs.scrollTop = logs.scrollHeight;
 
-                const row = document.createElement('tr');
-                row.innerHTML = `
-                    <td class="symbol">${escapeHtml(stock.Symbol)}</td>
-                    <td class="ltp">₹${stock.LTP.toFixed(2)}</td>
-                    <td class="${colorClass}">${sign}${stock.Change_Percent.toFixed(2)}%</td>
-                    <td class="volume">${volume}</td>
-                `;
-                tbody.appendChild(row);
-            });
+            try {
+                const res = await fetch(`${API_BASE}/api/chat`, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({message: userText})
+                });
+                const data = await res.json();
+                logs.innerHTML += `<div class="msg ai-msg">${data.reply}</div>`;
+                logs.scrollTop = logs.scrollHeight;
+            } catch(e) { logs.innerHTML += `<div class="msg ai-msg">Bhai backend se connect nahi ho raha!</div>`; }
         }
 
-        function formatVolume(vol) {
-            if (vol >= 10000000) return (vol / 10000000).toFixed(2) + ' Cr';
-            if (vol >= 100000) return (vol / 100000).toFixed(2) + ' L';
-            if (vol >= 1000) return (vol / 1000).toFixed(2) + ' K';
-            return vol.toString();
-        }
-
-        function escapeHtml(text) {
-            const div = document.createElement('div');
-            div.textContent = text;
-            return div.innerHTML;
-        }
-
-        // Initial load
-        fetchData();
-
-        // Auto refresh every 2 minutes
-        setInterval(fetchData, 120000);
+        fetchMarketData();
+        setInterval(fetchMarketData, 60000); // 1 min refresh
     </script>
 </body>
 </html>
-
