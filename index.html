@@ -3,44 +3,25 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>My NSE Live Dashboard + AI</title>
+    <title>Live F&O Master Dashboard</title>
     <style>
-        body { font-family: 'Segoe UI', Tahoma, sans-serif; background-color: #f4f6f9; margin: 0; padding: 20px; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f4f6f9; margin: 0; padding: 20px; }
         .header { text-align: center; margin-bottom: 20px; }
-        .time-box { font-size: 16px; color: #555; margin-bottom: 20px; }
+        .time-box { font-size: 16px; color: #555; margin-bottom: 20px; font-weight: bold; }
         .container { display: flex; gap: 20px; justify-content: center; flex-wrap: wrap; }
         .table-wrapper { background: white; border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.1); padding: 20px; width: 45%; min-width: 300px; }
         table { width: 100%; border-collapse: collapse; }
         th, td { padding: 10px; text-align: left; border-bottom: 1px solid #ddd; }
-        th { background-color: #f8f9fa; }
+        th { background-color: #f8f9fa; color: #333; }
         .green-text { color: #008000; font-weight: bold; }
         .red-text { color: #d32f2f; font-weight: bold; }
-        
-        /* AI Chat Box */
-        .chat-container { background: white; border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.1); width: 100%; max-width: 900px; margin: 20px auto; padding: 20px; }
-        #chat-logs { height: 200px; overflow-y: auto; background: #f8fafc; padding: 10px; border-radius: 8px; margin-bottom: 10px; border: 1px solid #ddd; }
-        .msg { padding: 8px 12px; margin-bottom: 5px; border-radius: 5px; }
-        .user-msg { background: #dbeafe; text-align: right; }
-        .ai-msg { background: #e2e8f0; }
-        .input-area { display: flex; gap: 10px; }
-        #user-input { flex: 1; padding: 10px; border: 1px solid #ddd; border-radius: 5px; }
-        button { padding: 10px 20px; background: #2563eb; color: white; border: none; border-radius: 5px; cursor: pointer; }
     </style>
 </head>
 <body>
 
     <div class="header">
-        <h1>📊 Live F&O Dashboard (Local Pro)</h1>
-        <div class="time-box" id="timestamp">Fetching live data... Please wait.</div>
-    </div>
-
-    <div class="chat-container">
-        <h3 style="margin-top:0;">💬 Gemini Bhai AI</h3>
-        <div id="chat-logs"><div class="msg ai-msg">Bhai! Dashboard local server pe connect ho gaya hai. Kya haal hain? 🚀</div></div>
-        <div class="input-area">
-            <input type="text" id="user-input" placeholder="Market ka haal batao...">
-            <button onclick="askAI()">Send</button>
-        </div>
+        <h1>🚀 Live F&O Market Dashboard</h1>
+        <div class="time-box" id="timestamp">⏳ Connecting to Render Backend... Please wait.</div>
     </div>
 
     <div class="container" id="data-container" style="display: none;">
@@ -62,58 +43,47 @@
     </div>
 
     <script>
-        const API_BASE = "http://127.0.0.1:8000"; // TERA LOCAL COMPUTER
+        // 🔥 YAHAN TERA RENDER KA LIVE LINK HAI 🔥
+        const API_URL = "https://nse-top-gainer-and-loser.onrender.com/api/live-data";
 
         async function fetchMarketData() {
             try {
-                const response = await fetch(`${API_BASE}/api/live-data`);
+                const response = await fetch(API_URL);
                 const result = await response.json();
 
                 if (result.status === 'success') {
-                    document.getElementById('timestamp').innerText = "✅ Last Updated: " + result.timestamp;
+                    document.getElementById('timestamp').innerText = "✅ Last Updated: " + result.timestamp + " IST (Auto-refreshes every 2 mins)";
                     document.getElementById('data-container').style.display = "flex";
 
                     let gainersHTML = "";
-                    result.data.top_gainers.forEach(s => {
-                        gainersHTML += `<tr><td><strong>${s.Symbol}</strong></td><td>${s.LTP}</td><td class="green-text">+${s.Change_Percent}%</td></tr>`;
+                    result.data.top_gainers.forEach(stock => {
+                        let sign = stock.Change_Percent > 0 ? "+" : ""; 
+                        gainersHTML += `<tr>
+                            <td><strong>${stock.Symbol}</strong></td>
+                            <td>${stock.LTP}</td>
+                            <td class="green-text">${sign}${stock.Change_Percent}%</td>
+                        </tr>`;
                     });
                     document.getElementById('gainers-body').innerHTML = gainersHTML;
 
                     let losersHTML = "";
-                    result.data.top_losers.forEach(s => {
-                        losersHTML += `<tr><td><strong>${s.Symbol}</strong></td><td>${s.LTP}</td><td class="red-text">${s.Change_Percent}%</td></tr>`;
+                    result.data.top_losers.forEach(stock => {
+                        losersHTML += `<tr>
+                            <td><strong>${stock.Symbol}</strong></td>
+                            <td>${stock.LTP}</td>
+                            <td class="red-text">${stock.Change_Percent}%</td>
+                        </tr>`;
                     });
                     document.getElementById('losers-body').innerHTML = losersHTML;
                 }
             } catch (error) {
-                document.getElementById('timestamp').innerText = "❌ Start Python Backend first! (uvicorn main:app)";
+                console.error("Error fetching data:", error);
+                document.getElementById('timestamp').innerText = "❌ Render API error! Backend check karo.";
             }
         }
 
-        async function askAI() {
-            const input = document.getElementById('user-input');
-            const logs = document.getElementById('chat-logs');
-            if(!input.value) return;
-
-            logs.innerHTML += `<div class="msg user-msg">${input.value}</div>`;
-            const userText = input.value;
-            input.value = "";
-            logs.scrollTop = logs.scrollHeight;
-
-            try {
-                const res = await fetch(`${API_BASE}/api/chat`, {
-                    method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({message: userText})
-                });
-                const data = await res.json();
-                logs.innerHTML += `<div class="msg ai-msg">${data.reply}</div>`;
-                logs.scrollTop = logs.scrollHeight;
-            } catch(e) { logs.innerHTML += `<div class="msg ai-msg">Bhai backend se connect nahi ho raha!</div>`; }
-        }
-
         fetchMarketData();
-        setInterval(fetchMarketData, 60000); // 1 min refresh
+        setInterval(fetchMarketData, 120000);
     </script>
 </body>
 </html>
