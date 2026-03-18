@@ -57,8 +57,7 @@
     </div>
 
     <script>
-        // 🔥 BHAI YAHAN APNE RENDER KA LINK DAALNA HAI 🔥
-        // Example: "https://my-nse-app.onrender.com/api/live-data"
+        // Maine tera live URL yahan daal diya hai!
         const API_URL = "https://nse-top-gainer-and-loser.onrender.com/api/live-data"; 
 
         async function fetchData() {
@@ -68,7 +67,7 @@
 
                 if (result.status === 'success') {
                     document.getElementById('dashboard').style.display = "grid";
-                    document.getElementById('timestamp').innerText = "✅ Last Updated: " + result.timestamp + " (Auto-refresh every 2 mins)";
+                    document.getElementById('timestamp').innerText = "✅ Last Updated: " + result.timestamp + " (Auto-refresh every 1 min)";
 
                     // Populate Indices
                     let idxHtml = "";
@@ -82,7 +81,8 @@
                     // Populate Gainers
                     let gHtml = "";
                     result.data.top_gainers.forEach(item => {
-                        gHtml += `<tr><td class="symbol">${item.Symbol}</td><td>₹${item.LTP}</td><td class="green">+${item.Change_Percent}%</td></tr>`;
+                        let sign = item.Change_Percent > 0 ? '+' : '';
+                        gHtml += `<tr><td class="symbol">${item.Symbol}</td><td>₹${item.LTP}</td><td class="green">${sign}${item.Change_Percent}%</td></tr>`;
                     });
                     document.getElementById('gainers-body').innerHTML = gHtml;
 
@@ -101,7 +101,7 @@
         }
 
         fetchData();
-        setInterval(fetchData, 120000); // 120 seconds
+        setInterval(fetchData, 60000); // 60 seconds fast refresh
     </script>
 </body>
 </html>
